@@ -122,7 +122,7 @@ def transformToLocalPath(image_object_array):
             image_object.seek(0)
     return (array_of_paths_to_send_back)
 
-def convertToNumpyArrays(image_object_array):
+def transformToNumpyArrays(image_object_array):
     numpy_arrays_to_send_back = []
     for index, image_object in enumerate(image_object_array):
         in_memory = io.BytesIO()
@@ -131,7 +131,7 @@ def convertToNumpyArrays(image_object_array):
         color_image_flag = 1
         img = cv2.imdecode(data, color_image_flag)
         numpy_arrays_to_send_back.append(img)
-    return numpy_arrays_to_send_back
+    return (numpy_arrays_to_send_back)
 
 def getUniqueCacheId():
     md5_store = []
@@ -236,7 +236,7 @@ def getTextArray():
         pass
     return (textdata)
 
-def getImageArray(mode='numpy_array'):
+def getImageArray(mode='file_path'):
     validateTOKEN(sys._getframe().f_code.co_name)
     imagedata = []
     i = 0
@@ -249,7 +249,7 @@ def getImageArray(mode='numpy_array'):
     if mode == 'file_path':
         return (transformToLocalPath(imagedata))
     elif mode == 'numpy_array':
-        return (convertToNumpyArrays(imagedata))
+        return (transformToNumpyArrays(imagedata))
 
 ######################
 ## output functions ##
