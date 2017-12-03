@@ -16,27 +16,27 @@ image_list = [
     'example2.png'
 ]
 
-def test_sendText():
+def test_getTextInput():
     data_copy = data.copy()
     data_copy['test_number'] = 0
     r = requests.post(url=url, data=data_copy)
     assert(r.status_code == 200)
 
-def test_wrongText():
+def test_getWrongTextInput():
     data_copy = data.copy()
     data_copy['test_number'] = 0
     data_copy['input-text-0'] = 'goodbye'
     r = requests.post(url=url, data=data_copy)
     assert(r.status_code == 500)
 
-def test_extraText():
+def test_getExtraTextInput():
     data_copy = data.copy()
     data_copy['test_number'] = 0
     data_copy['input-text-3'] = 'goodbye'
     r = requests.post(url=url, data=data_copy)
     assert(r.status_code == 500)
 
-def test_sendImage_filepath():
+def test_getImageInput_filepath():
     # compile image data as byte strings
     files = {}
     for i in range(len(image_list)):
@@ -45,7 +45,7 @@ def test_sendImage_filepath():
     r = requests.post(url=url, files=files, data={'test_number': 1})    
     assert(r.status_code == 200)
 
-def test_sendImage_nparray():
+def test_getImageInput_nparray():
     # compile image data as byte strings
     files = {}
     for i in range(len(image_list)):
@@ -54,7 +54,7 @@ def test_sendImage_nparray():
     r = requests.post(url=url, files=files, data={'test_number': 2})
     assert(r.status_code == 200)
 
-def test_wrongImageOrder():
+def test_getWrongImageInput():
     # compile image data as byte strings
     files = {}
     for i in range(len(image_list)):
