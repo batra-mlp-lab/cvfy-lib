@@ -6,4 +6,3 @@
 2. python server_textimageinput.py
 3. pytest
 
-

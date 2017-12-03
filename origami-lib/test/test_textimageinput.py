@@ -20,7 +20,21 @@ def test_sendText():
     data_copy = data.copy()
     data_copy['test_number'] = 0
     r = requests.post(url=url, data=data_copy)
-    print(r)
+    assert(r.status_code == 200)
+
+def test_wrongText():
+    data_copy = data.copy()
+    data_copy['test_number'] = 0
+    data_copy['input-text-0'] = 'goodbye'
+    r = requests.post(url=url, data=data_copy)
+    assert(r.status_code == 500)
+
+def test_extraText():
+    data_copy = data.copy()
+    data_copy['test_number'] = 0
+    data_copy['input-text-3'] = 'goodbye'
+    r = requests.post(url=url, data=data_copy)
+    assert(r.status_code == 500)
 
 def test_sendImage_filepath():
     # compile image data as byte strings
@@ -29,7 +43,7 @@ def test_sendImage_filepath():
         with open(image_list[i], 'rb') as f:
             files['input-image-%d'%(i)] = f.read()
     r = requests.post(url=url, files=files, data={'test_number': 1})    
-    print(r)
+    assert(r.status_code == 200)
 
 def test_sendImage_nparray():
     # compile image data as byte strings
@@ -38,7 +52,16 @@ def test_sendImage_nparray():
         with open(image_list[i], 'rb') as f:
             files['input-image-%d'%(i)] = f.read()
     r = requests.post(url=url, files=files, data={'test_number': 2})
-    print(r)
+    assert(r.status_code == 200)
+
+def test_wrongImageOrder():
+    # compile image data as byte strings
+    files = {}
+    for i in range(len(image_list)):
+        with open(image_list[len(image_list) - 1 - i], 'rb') as f:
+            files['input-image-%d'%(i)] = f.read()
+    r = requests.post(url=url, files=files, data={'test_number': 2})
+    assert(r.status_code == 500)
 
 def test_all():
     data_copy = data.copy()
@@ -48,4 +71,7 @@ def test_all():
         with open(image_list[i], 'rb') as f:
             files['input-image-%d'%(i)] = f.read()
     r = requests.post(url=url, files=files, data=data_copy)
-    print(r)
+    print(dir(r))
+    print(r.reason)
+    print(r.content)
+    assert(r.status_code == 200)
