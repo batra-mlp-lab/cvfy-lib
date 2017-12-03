@@ -1,4 +1,5 @@
 import requests 
+import json
 
 # server running locally at port 8888
 url = 'http://127.0.0.1:8888/event'
@@ -21,6 +22,7 @@ def test_getTextInput():
     data_copy['test_number'] = 0
     r = requests.post(url=url, data=data_copy)
     assert(r.status_code == 200)
+    assert(json.loads(r.content)['data'] == ['hello', 'world', 'Is this a sample question?'])
 
 def test_getWrongTextInput():
     data_copy = data.copy()

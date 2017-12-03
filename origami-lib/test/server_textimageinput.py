@@ -5,6 +5,7 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 import origami
 import numpy as np
 import cv2      # for reading image files
+from flask import jsonify
 
 # running at 127.0.0.1
 # port 8888
@@ -44,7 +45,9 @@ def test():
             return 'Wrong number of strings received', 500
         # check that strings received match expected strings
         if all_text != text_list:
-            return 'Text data not received correctly', 500        
+            return 'Text data not received correctly', 500
+        if tnum == '0':
+            return jsonify({'data': all_text}), 200        
     
     if tnum == '1' or tnum == '3':
         # test getImageArray with file_path mode
