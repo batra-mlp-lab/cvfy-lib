@@ -8,7 +8,7 @@ python:
 before_install:
   - pip install -U pip
 
-install:
+script:
   - pip install opencv-python
   - pip install numpy
   - pip install -r requirements.txt
