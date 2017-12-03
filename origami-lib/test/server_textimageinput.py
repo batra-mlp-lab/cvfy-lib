@@ -64,6 +64,8 @@ def test():
             # check that images match in shape and pixel values
             if not np.array_equal(im1, im2):
                 return 'Images not saved correctly', 500
+        if tnum == '1':
+            return jsonify({'data': all_image_paths}), 200
     
     if tnum == '2' or tnum == '3':
         # test getImageArray with numpy_array mode
@@ -77,6 +79,8 @@ def test():
             # check that images match in shape and pixel values
             if not np.array_equal(all_images[i], im):
                 return 'Images not converted correctly', 500
+        if tnum == '2':
+            return jsonify({'data': [a.tolist() for a in all_images]}), 200
 
     return 'OK'
 

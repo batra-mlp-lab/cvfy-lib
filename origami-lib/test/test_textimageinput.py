@@ -1,5 +1,7 @@
 import requests 
 import json
+import numpy as np
+import cv2
 
 # server running locally at port 8888
 url = 'http://127.0.0.1:8888/event'
@@ -46,6 +48,10 @@ def test_getImageInput_filepath():
             files['input-image-%d'%(i)] = f.read()
     r = requests.post(url=url, files=files, data={'test_number': 1})    
     assert(r.status_code == 200)
+    filepaths = json.loads(r.content)['data']
+    assert(len(filepaths) == len(image_list))
+    for i in range(len(filepaths)):
+        assert(np.array_equal(cv2.imread(filepaths[i]), cv2.imread(image_list[i])))
 
 def test_getImageInput_nparray():
     # compile image data as byte strings
@@ -55,6 +61,10 @@ def test_getImageInput_nparray():
             files['input-image-%d'%(i)] = f.read()
     r = requests.post(url=url, files=files, data={'test_number': 2})
     assert(r.status_code == 200)
+    images = json.loads(r.content)['data']
+    assert(len(images) == len(image_list))
+    for i in range(len(images)):
+        assert(np.array_equal(np.array(images[i], dtype=np.int16), cv2.imread(image_list[i])))
 
 def test_getWrongImageInput():
     # compile image data as byte strings
@@ -73,7 +83,4 @@ def test_all():
         with open(image_list[i], 'rb') as f:
             files['input-image-%d'%(i)] = f.read()
     r = requests.post(url=url, files=files, data=data_copy)
-    print(dir(r))
-    print(r.reason)
-    print(r.content)
     assert(r.status_code == 200)
