@@ -52,6 +52,7 @@ def test():
     elif tnum == '2':
         # test getImageArray with numpy_array mode
         all_images = origami.getImageArray(mode='numpy_array')
+        # np arrays have to be converted to python lists before converting to json
         return jsonify({'data': [a.tolist() for a in all_images]}), 200
     
     elif tnum == '3':

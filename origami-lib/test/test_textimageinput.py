@@ -19,6 +19,7 @@ image_list = [
     'example2.png'
 ]
 
+# send text strings and check that they are received properly
 def test_getTextInput():
     data_copy = data.copy()
     data_copy['test_number'] = 0
@@ -27,6 +28,7 @@ def test_getTextInput():
     assert(len(text_array) == 3)
     assert(text_array == ['hello', 'world', 'Is this a sample question?'])
 
+# send wrong strings
 def test_getWrongTextInput():
     data_copy = data.copy()
     data_copy['test_number'] = 0
@@ -35,6 +37,7 @@ def test_getWrongTextInput():
     text_array = json.loads(r.content)['data']
     assert(text_array != ['hello', 'world', 'Is this a sample question?'])
 
+# send more text strings than expected
 def test_getExtraTextInput():
     data_copy = data.copy()
     data_copy['test_number'] = 0
@@ -43,6 +46,7 @@ def test_getExtraTextInput():
     text_array = json.loads(r.content)['data']
     assert(text_array != ['hello', 'world', 'Is this a sample question?'])
 
+# send images and get result as file_path
 def test_getImageInput_filepath():
     # compile image data as byte strings
     files = {}
@@ -55,6 +59,7 @@ def test_getImageInput_filepath():
     for i in range(len(filepaths)):
         assert(np.array_equal(cv2.imread(filepaths[i]), cv2.imread(image_list[i])))
 
+# send images and get result as numpy array
 def test_getImageInput_nparray():
     # compile image data as byte strings
     files = {}
@@ -68,6 +73,7 @@ def test_getImageInput_nparray():
     for i in range(len(images)):
         assert(np.array_equal(np.array(images[i], dtype=np.int16), cv2.imread(image_list[i])))
 
+# send wrong images
 def test_getWrongImageInput():
     # compile image data as byte strings
     files = {}
@@ -82,6 +88,7 @@ def test_getWrongImageInput():
     for i in range(len(images)):
         assert(not np.array_equal(np.array(images[i], dtype=np.int16), cv2.imread(image_list[i])))
 
+# send both the text data and image data at once
 def test_all():
     data_copy = data.copy()
     data_copy['test_number'] = 3
