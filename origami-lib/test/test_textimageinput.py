@@ -23,22 +23,25 @@ def test_getTextInput():
     data_copy = data.copy()
     data_copy['test_number'] = 0
     r = requests.post(url=url, data=data_copy)
-    assert(r.status_code == 200)
-    assert(json.loads(r.content)['data'] == ['hello', 'world', 'Is this a sample question?'])
+    text_array = json.loads(r.content)['data']
+    assert(len(text_array) == 3)
+    assert(text_array == ['hello', 'world', 'Is this a sample question?'])
 
 def test_getWrongTextInput():
     data_copy = data.copy()
     data_copy['test_number'] = 0
     data_copy['input-text-0'] = 'goodbye'
     r = requests.post(url=url, data=data_copy)
-    assert(r.status_code == 500)
+    text_array = json.loads(r.content)['data']
+    assert(text_array != ['hello', 'world', 'Is this a sample question?'])
 
 def test_getExtraTextInput():
     data_copy = data.copy()
     data_copy['test_number'] = 0
     data_copy['input-text-3'] = 'goodbye'
     r = requests.post(url=url, data=data_copy)
-    assert(r.status_code == 500)
+    text_array = json.loads(r.content)['data']
+    assert(text_array != ['hello', 'world', 'Is this a sample question?'])
 
 def test_getImageInput_filepath():
     # compile image data as byte strings
@@ -46,8 +49,7 @@ def test_getImageInput_filepath():
     for i in range(len(image_list)):
         with open(image_list[i], 'rb') as f:
             files['input-image-%d'%(i)] = f.read()
-    r = requests.post(url=url, files=files, data={'test_number': 1})    
-    assert(r.status_code == 200)
+    r = requests.post(url=url, files=files, data={'test_number': 1})
     filepaths = json.loads(r.content)['data']
     assert(len(filepaths) == len(image_list))
     for i in range(len(filepaths)):
@@ -60,7 +62,7 @@ def test_getImageInput_nparray():
         with open(image_list[i], 'rb') as f:
             files['input-image-%d'%(i)] = f.read()
     r = requests.post(url=url, files=files, data={'test_number': 2})
-    assert(r.status_code == 200)
+    # get image pixel data
     images = json.loads(r.content)['data']
     assert(len(images) == len(image_list))
     for i in range(len(images)):
@@ -70,10 +72,15 @@ def test_getWrongImageInput():
     # compile image data as byte strings
     files = {}
     for i in range(len(image_list)):
+        # images in wrong order
         with open(image_list[len(image_list) - 1 - i], 'rb') as f:
             files['input-image-%d'%(i)] = f.read()
     r = requests.post(url=url, files=files, data={'test_number': 2})
-    assert(r.status_code == 500)
+    # get image pixel data
+    images = json.loads(r.content)['data']
+    assert(len(images) == len(image_list))
+    for i in range(len(images)):
+        assert(not np.array_equal(np.array(images[i], dtype=np.int16), cv2.imread(image_list[i])))
 
 def test_all():
     data_copy = data.copy()
@@ -83,4 +90,14 @@ def test_all():
         with open(image_list[i], 'rb') as f:
             files['input-image-%d'%(i)] = f.read()
     r = requests.post(url=url, files=files, data=data_copy)
-    assert(r.status_code == 200)
+    recv_data = json.loads(r.content)
+    text_array = recv_data['text']
+    image_paths = recv_data['filepaths']
+    images = recv_data['images']
+    assert(text_array == ['hello', 'world', 'Is this a sample question?'])
+    assert(len(images) == len(image_list))
+    for i in range(len(images)):
+        assert(np.array_equal(np.array(images[i], dtype=np.int16), cv2.imread(image_list[i])))
+    assert(len(image_paths) == len(image_list))
+    for i in range(len(image_paths)):
+        assert(np.array_equal(cv2.imread(image_paths[i]), cv2.imread(image_list[i])))
