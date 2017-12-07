@@ -16,7 +16,6 @@ before_script:
 script:
   - cd origami-lib/test/
   - pytest
-  - echo $SERVER_PID
   - kill -9 $SERVER_PID
 
 cache: pip
