@@ -1,7 +1,7 @@
 from distutils.core import setup
 setup(
-  name = 'origami­-lib',
-  packages = ['origami­-lib'],
+  name = 'origami_lib',
+  packages = ['origami_lib'],
   version = '0.1',
   description = 'Library to set up your project to run on Origami',
   author = 'CloudCV Team',
