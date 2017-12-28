@@ -28,6 +28,20 @@ def test_getTextInput():
     assert(len(text_array) == 3)
     assert(text_array == ['hello', 'world', 'Is this a sample question?'])
 
+# send test strings
+def test_getTextInput2():
+    r = requests.post(url=url, data={
+        'input-text-0': 'test',
+        'input-text-1': 'test',
+        'input-text-2': 'test',
+        'input-text-3': 'test',
+        'test_number': 0
+    })
+    r = requests.post(url=url, data_copy)
+    text_array = json.loads(r.content)['data']
+    assert(len(text_array) == 4)
+    assert(text_array == ['test', 'test', 'test', 'test'])
+
 # send wrong strings
 def test_getWrongTextInput():
     data_copy = data.copy()

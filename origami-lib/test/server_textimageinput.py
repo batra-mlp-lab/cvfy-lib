@@ -35,7 +35,6 @@ def test():
     tnum = origami.request.form['test_number']
 
     if tnum == '0':
-        print('hello')
         # test getTextArray
         all_text = origami.getTextArray()
         print('Received %d text strings'%(len(all_text)))
