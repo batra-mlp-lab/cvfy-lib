@@ -28,7 +28,7 @@ def test_getTextInput():
     assert(len(text_array) == 3)
     assert(text_array == ['hello', 'world', 'Is this a sample question?'])
 
-# send test strings
+# send text strings
 def test_getTextInput2():
     r = requests.post(url=url, data={
         'input-text-0': 'test',
@@ -72,6 +72,17 @@ def test_getImageInput_filepath():
     assert(len(filepaths) == len(image_list))
     for i in range(len(filepaths)):
         assert(np.array_equal(cv2.imread(filepaths[i]), cv2.imread(image_list[i])))
+
+# send image and get result as file path
+def test_getImageInput_filepath2():
+    files = {}
+    with open('example3.png') as f:
+        files['input-image-0'] = f.read()
+    r = requests.post(url=url, files=files, data={'test_number': 1})
+    filepaths = json.loads(r.content)['data']
+    assert(len(filepaths) == 1)
+    for i in range(len(filepaths)):
+        assert(np.array_equal(cv2.imread(filepaths[i]), cv2.imread('example3.png')))
 
 # send images and get result as numpy array
 def test_getImageInput_nparray():
