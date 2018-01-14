@@ -126,4 +126,4 @@ def test_getLessTextInput():
     data_copy['input-text-2'] = None
     r = requests.post(url=url, data=data_copy)
     text_array = json.loads(r.content)['data']
-    assert(text_array != ['hello', 'world', 'Is this a sample question?'])
+    assert(text_array == ['hello', 'world'])
