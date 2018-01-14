@@ -108,3 +108,22 @@ def test_all():
     assert(len(image_paths) == len(image_list))
     for i in range(len(image_paths)):
         assert(np.array_equal(cv2.imread(image_paths[i]), cv2.imread(image_list[i])))
+
+# send empty text array
+def test_getEmptyTextInput():
+    r = requests.post(url=url, data={
+         'input-text-0': None,
+         'test_number': 0
+    })
+    text_array = json.loads(r.content)['data']
+    assert(len(text_array) == 0)
+    assert(text_array == [])
+
+# send less text strings than expected
+def test_getLessTextInput():
+    data_copy = data.copy()
+    data_copy['test_number'] = 0
+    data_copy['input-text-2'] = None
+    r = requests.post(url=url, data=data_copy)
+    text_array = json.loads(r.content)['data']
+    assert(text_array != ['hello', 'world', 'Is this a sample question?'])
