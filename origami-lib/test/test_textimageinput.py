@@ -108,3 +108,7 @@ def test_all():
     assert(len(image_paths) == len(image_list))
     for i in range(len(image_paths)):
         assert(np.array_equal(cv2.imread(image_paths[i]), cv2.imread(image_list[i])))
+
+
+
+    

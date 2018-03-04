@@ -62,6 +62,34 @@ def test():
         return jsonify({'text': all_text, 
                         'filepaths': all_image_paths, 
                         'images': [a.tolist() for a in all_images]}), 200
+    elif tnum == '4':
+        text=origami.getTextArray()
+        origami.saveTextArrayToCache(text)
+        pass
+
+    elif tnum == '5':
+        exist=origami.checkIfCachedResultsExist()
+        return jsonify({'exist':exist}),200
+
+    elif tnum == '6':
+        text_array=origami.loadTextArrayFromCache()
+        print text_array
+        return jsonify({'text':text_array}),200
+
+    elif tnum == '7':
+        all_image_paths = origami.getImageArray(mode='file_path')
+        origami.saveImageArrayToCache(data=all_image_paths,mode='file_path')
+        return jsonify({'text':'done'}),200
+
+
+    elif tnum == '8':
+        all_image_paths = origami.getImageArray(mode='numpy_array')
+        origami.saveImageArrayToCache(data=all_image_paths,mode='numpy_array')
+        return jsonify({'text':'done'}),200
+
+    elif tnum == '9':
+        img_array=origami.loadImageArrayFromCache()
+        return jsonify({'img':img_array}),200
 
     else:
         return 'Please define test number', 500
