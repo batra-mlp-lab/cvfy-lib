@@ -25,6 +25,8 @@ def test_saveTextArrayToCache():
     data_copy = data.copy()
     data_copy['test_number'] = 4
     r = requests.post(url=url, data=data_copy)
+    done= json.loads(r.content)['done']
+    assert(done == True)
 
     
 def test_checkIfCachedResultsExist():
