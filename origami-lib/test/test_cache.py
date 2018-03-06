@@ -72,7 +72,6 @@ def test_loadImageArrayFromCache():
     for i in range(len(image_list)):
         with open(image_list[i], 'rb') as f:
             files['input-image-%d'%(i)] = f.read()
-            
     r = requests.post(url=url, files=files,data={'test_number': 9})
     img_array = json.loads(r.content)['img']
     assert(len(img_array) == 4)  #2 for cache by file_path and 2 for cache by np_array
