@@ -6,7 +6,7 @@ from tornado.wsgi import WSGIContainer
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 
-from origami.utils import validate_token, parse_target
+
 from origami import constants, exceptions, utils
 
 
