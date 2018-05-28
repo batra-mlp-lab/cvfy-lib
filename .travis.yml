@@ -7,13 +7,13 @@ python:
 before_script:
   - pip install -r requirements-dev.txt
   - pip install --editable .
-  - |
-    python origami-lib/test/server_textimageinput.py &
-    SERVER_PID=$!
+#   - |
+#     python origami-lib/test/server_textimageinput.py &
+#     SERVER_PID=$!
 
-script:
-  - cd origami-lib/test/
-  - pytest
-  - kill -9 $SERVER_PID
+# script:
+#   - cd origami-lib/test/
+#   - pytest
+#   - kill -9 $SERVER_PID
 
 cache: pip
