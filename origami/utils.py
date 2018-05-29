@@ -1,3 +1,7 @@
+import cv2
+import io
+import numpy as np
+
 from origami import exceptions, constants
 
 
@@ -61,3 +65,30 @@ def parse_target(token):
             "TOKEN invalid: Required format %s".format(constants.TOKEN_FORMAT))
 
     return target
+
+
+def get_image_as_numpy_arr(image_files_arr):
+    """ Takes an array of image files and returns numpy array for the same
+
+    This function is a helper function which takes in image files from users
+    request and returns the corresponding numpy array for images.
+
+    Args:
+        image_files_arr: Array of image files from user request
+
+    Returns:
+        image_np_arr: Array of numpy image array corresponding to given
+            image files.
+    """
+    images_np_arr = []
+
+    for index, image_object in enumerate(image_files_arr):
+        in_memory = io.BytesIO()
+        image_object.save(in_memory)
+        data = np.fromstring(in_memory.getvalue(), dtype=np.uint8)
+        color_image_flag = 1
+        image = cv2.imdecode(data, color_image_flag)
+
+        images_np_arr.append(image)
+
+    return images_np_arr
