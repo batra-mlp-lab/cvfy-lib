@@ -206,7 +206,6 @@ class OrigamiOutputs(OrigamiRequester):
         self.response = jsonify(payload)
         return self.response
 
-
     def origami_api(self, view_func):
         """
         Decorator to decorate the user defined main function to
