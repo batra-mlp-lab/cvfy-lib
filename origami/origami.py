@@ -1,4 +1,4 @@
-from flask import Flask, request as user_req, Response
+from flask import Flask, request as user_req
 from flask_cors import CORS, cross_origin
 import magic
 from tornado.wsgi import WSGIContainer
@@ -11,8 +11,8 @@ from origami import constants, exceptions, utils
 
 class OrigamiPipeline(object):
     """ Implements pipeline functions for Origami
-    Handles various pipeline functions such as fetching and saving data from and
-    to cache.
+    Handles various pipeline functions such as fetching and saving data from
+    and to cache.
     """
     def __init__(self):
         pass
@@ -23,8 +23,8 @@ class OrigamiPipeline(object):
 
 class OrigamiInputs(OrigamiPipeline):
     """ Origami input functions
-    Class implementing input functions for Origami, this class will be inherited
-    by main Origami class.
+    Class implementing input functions for Origami, this class will be
+    inherited by main Origami class.
     """
     def __init__(self):
         pass
