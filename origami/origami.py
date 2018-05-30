@@ -221,6 +221,7 @@ class OrigamiOutputs(OrigamiRequester):
         self.response.append(payload)
         return self.response
 
+
     def origami_api(self, view_func):
         """
         Decorator to decorate the user defined main function to
