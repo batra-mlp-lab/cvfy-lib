@@ -56,6 +56,13 @@ def validate_socket_id(request):
     except:
         raise Exception("cvfy [Error Code: 011] => field socket-id not found in the incoming request")
 
+def isApi():
+    try:
+        if request.form['api']:
+            return True
+    except:
+        return False
+
 ##########
 ## CORS ##
 ##########
