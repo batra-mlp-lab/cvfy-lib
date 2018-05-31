@@ -12,22 +12,7 @@ class MismatchTypeException(OrigamiException):
     """
     These exceptions are caused during mismatched types.
     """
-    STATUS_CODE = 501
-
-
-class OrigamiServerException(OrigamiException):
-    """
-    These exceptions are caused during mismatched types.
-    """
-    STATUS_CODE = 502
-
-
-class InvalidTokenException(OrigamiException):
-    """
-    These exceptions are caused by providing invalid token to origami
-    while registering app.
-    """
-    STATUS_CODE = 401
+    STATUS_CODE = 100
 
 
 class InputHandlerException(OrigamiException):
@@ -43,3 +28,46 @@ class InvalidRequestParameterGet(OrigamiException):
     user request.
     """
     STATUS_CODE = 301
+
+
+class OrigamiRequesterException(OrigamiException):
+    """
+    Some other status code when requesting resource using OrigmaiRequester
+    """
+    STATUS_CODE = 400
+
+
+class BadRequestException(OrigamiException):
+    """
+    400 when making a request using OrigamiRequester.
+    """
+    STATUS_CODE = 401
+
+
+class NotFoundRequestException(OrigamiException):
+    """
+    404 when requesting a resource using OrigamiRequester
+    """
+    STATUS_CODE = 402
+
+
+class InternalServerErrorException(OrigamiException):
+    """
+    500 when requesting the resource using OrigamiRequester
+    """
+    STATUS_CODE = 403
+
+
+class InvalidTokenException(OrigamiException):
+    """
+    These exceptions are caused by providing invalid token to origami
+    while registering app.
+    """
+    STATUS_CODE = 500
+
+
+class OrigamiServerException(OrigamiException):
+    """
+    These exceptions are caused during error during server running.
+    """
+    STATUS_CODE = 501
