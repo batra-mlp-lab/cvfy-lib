@@ -1,6 +1,12 @@
 ORIGAMI_INJECTION_PATH = "/event"
+ORIGAMI_SERVER_PATH = "localhost:8000"
+
+HTTP_ENDPOINT = "http://"
+HTTPS_ENDPOINT = "https://"
 
 DEMO_DEPLOYMENT_TYPE = ["gh", "nongh"]
+LOCAL_TARGET = 'local'
+REMOTE_TARGET = 'remote'
 
 TOKEN_FORMAT = "nongh:0.0.0.0:1814173:5001:9001:0.0.0.0"
 

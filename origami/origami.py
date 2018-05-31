@@ -1,12 +1,83 @@
 from flask import Flask, request as user_req, jsonify
 from flask_cors import CORS, cross_origin
 import magic
+import requests
 from tornado.wsgi import WSGIContainer
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 
 from origami.utils import validate_token, parse_target
 from origami import constants, exceptions, utils
+
+
+class OrigamiRequester(object):
+    def __init__(self):
+        pass
+
+    def _get_target_from_token(self):
+        """
+        Returns:
+            The target URL for origami server to send payload to.
+        """
+        # TODO: Implement this for local deployment too using the token
+        target = "{0}{1}{2}".format(
+            constants.HTTP_ENDPOINT,
+            constants.ORIGAMI_SERVER_PATH,
+            constants.ORIGAMI_INJECTION_PATH)
+        return target
+
+    def reqeust_origami_server(self, payload):
+        """
+        Makes a POST request to the origami server to send the payload, this
+        can be used to send data to user via socket. First origami-lib makes
+        request to Origami server providing the socket Id of the user which in
+        turn inject the data to user browser provided in the data field of the
+        payload.
+
+        Args:
+            payload: Python dict which is to be sent to the origami server
+                The format of the payload is:
+                payload = {
+                    "socketId": userSocketID,
+                    "[dataType]": data
+                }
+
+                where dataType can be one of the following.
+                data, terminalData
+
+        Returns:
+            response_text:
+                Response text returned from the request made.
+
+        Raises:
+            BadRequestException:
+                400 when requesting
+            NotFoundRequestException:
+                404 when requesting
+            InternalServerErrorException:
+                500 when requesting
+            OrigamiRequesterException:
+                Some other error code when requesting
+        """
+        target_url = self._get_target_from_token()
+        resp = requests.post(
+            target_url,
+            headers=constants.REQUESTS_JSON_HEADERS,
+            data=payload)
+        if resp.status_code == 400:
+            raise exceptions.BadRequestException(
+                "Bad Request: 400 when sending data to origami server")
+        elif resp.status_code == 404:
+            raise exceptions.NotFoundRequestException(
+                "Not Found: 404 when sending data to origami server")
+        elif resp.status_code == 500:
+            raise exceptions.InternalServerErrorException(
+                "Internal Server Error: 500 when requesting origami server")
+        elif resp.status_code == 200:
+            return resp.text
+        else:
+            raise exceptions.OrigamiRequesterException(
+                "Connection error when requesting origami server")
 
 
 class OrigamiPipeline(object):
@@ -96,7 +167,7 @@ class OrigamiInputs(OrigamiPipeline):
                 "No valid mode provided when requesting user image input")
 
 
-class OrigamiOutputs(object):
+class OrigamiOutputs(OrigamiRequester):
     """ Origami output functionalities
     This class implements all the output functions for Origami.
 
@@ -121,9 +192,6 @@ class OrigamiOutputs(object):
         response = self.response
         self.response = constants.DEFAULT_ORIGAMI_RESPONSE_TEMPLATE
         return response
-
-    def _request_origami_server(self):
-        pass
 
     def _send_api_response(self, payload):
         """
@@ -191,7 +259,7 @@ class OrigamiOutputs(object):
                 'socketId': socketId,
                 'data': data
             }
-            resp = self._request_origami_server(payload)
+            resp = self.request_origami_server(payload)
         else:
             # TODO: Discuss the strucutre of API response payload.
             payload = {
