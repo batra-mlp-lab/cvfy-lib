@@ -26,7 +26,7 @@ class OrigamiRequester(object):
             constants.ORIGAMI_INJECTION_PATH)
         return target
 
-    def reqeust_origami_server(self, payload):
+    def request_origami_server(self, payload):
         """
         Makes a POST request to the origami server to send the payload, this
         can be used to send data to user via socket. First origami-lib makes
