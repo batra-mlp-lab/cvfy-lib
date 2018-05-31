@@ -1,4 +1,4 @@
-from flask import Flask, request as user_req
+from flask import Flask, request as user_req, jsonify
 from flask_cors import CORS, cross_origin
 import magic
 from tornado.wsgi import WSGIContainer
@@ -42,14 +42,15 @@ class OrigamiInputs(OrigamiPipeline):
         """
         text_inputs = []
         i = 0
-        try:
-            # TODO: Convert this to getlist to directly get the list of inputs
-            while True:
-                text_inputs.append(
-                    user_req.form.get('input-text-{}'.format(i), type=str))
-                i += 1
-        except ValueError:
-            pass
+        # TODO: Convert this to getlist to directly get the list of inputs
+        while True:
+            input_text = user_req.form.get('input-text-{}'.format(i), type=str)
+            if input_text:
+                text_inputs.append(input_text)
+            else:
+                break
+            i += 1
+
         if text_inputs:
             return text_inputs
         else:
@@ -124,8 +125,18 @@ class OrigamiOutputs(object):
     def _request_origami_server(self):
         pass
 
-    def _send_api_response(self):
-        pass
+    def _send_api_response(self, payload):
+        """
+        Set the response for user request as a json object of payload
+
+        Args:
+            payload: payload(python dict) to be sent to the user
+
+        Returns:
+            Jsonified json response object.
+        """
+        self.response = jsonify(payload)
+        return self.response
 
     def origami_api(self, view_func):
         """
@@ -170,22 +181,23 @@ class OrigamiOutputs(object):
                 "send_text_array expects a list or tuple of string")
 
         resp = None
-        try:
+        socketId = user_req.form.get('socket-id', type=str)
+        # Check if a valid socketId is provided in the request
+        # else consider it as an API request.
+        if socketId:
             # Check if the socket-id is there is the request form.
-            socketId = user_req.form.get('socket-id', type=str)
             payload = {
                 'socketId': socketId,
                 'data': data
             }
             resp = self._request_origami_server(payload)
-        except ValueError:
+        else:
             # TODO: Discuss the strucutre of API response payload.
             payload = {
                 'data': data
             }
             resp = self._send_api_response(payload)
-        finally:
-            return resp
+        return resp
 
 
 class Origami(OrigamiInputs, OrigamiOutputs):
