@@ -2,6 +2,7 @@ from flask import Flask, request as user_req, jsonify
 from flask_cors import CORS, cross_origin
 import magic
 import requests
+import re
 from tornado.wsgi import WSGIContainer
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
@@ -59,11 +60,24 @@ class OrigamiRequester(object):
             OrigamiRequesterException:
                 Some other error code when requesting
         """
-        target_url = self._get_target_from_token()
-        resp = requests.post(
-            target_url,
-            headers=constants.REQUESTS_JSON_HEADERS,
-            data=payload)
+        try:
+            target_url = self._get_origami_server_target_url()
+        except Exception as e:
+            raise exceptions.RequesterNoTargetUrlException(
+                "No target url retriver function _get_origami_server_target_url\
+                found")
+
+        # Request the origami server
+        try:
+            resp = requests.post(
+                target_url,
+                headers=constants.REQUESTS_JSON_HEADERS,
+                data=payload)
+        except Exception as e:
+            raise exceptions.OrigamiRequesterException(
+                "Connection error when requesting origami server")
+
+        # Check the response object
         if resp.status_code == 400:
             raise exceptions.BadRequestException(
                 "Bad Request: 400 when sending data to origami server")
@@ -175,7 +189,7 @@ class OrigamiOutputs(OrigamiRequester):
         response: response variable storing response to be sent to client
             if API access is enabled using the provided decorator.
     """
-    response = constants.DEFAULT_ORIGAMI_RESPONSE_TEMPLATE
+    response = list(constants.DEFAULT_ORIGAMI_RESPONSE_TEMPLATE)
 
     def __init__(self):
         pass
@@ -189,8 +203,9 @@ class OrigamiOutputs(OrigamiRequester):
             response: string which was in self.response before clearing
                 it up.
         """
-        response = self.response
-        self.response = constants.DEFAULT_ORIGAMI_RESPONSE_TEMPLATE
+        response = jsonify(self.response)
+        # Make a copy of the constant origami response template in self.response
+        self.response = list(constants.DEFAULT_ORIGAMI_RESPONSE_TEMPLATE)
         return response
 
     def _send_api_response(self, payload):
@@ -203,7 +218,7 @@ class OrigamiOutputs(OrigamiRequester):
         Returns:
             Jsonified json response object.
         """
-        self.response = jsonify(payload)
+        self.response.append(payload)
         return self.response
 
     def origami_api(self, view_func):
@@ -225,12 +240,47 @@ class OrigamiOutputs(OrigamiRequester):
             return response
         return _wrapper
 
-    def send_text_array(self, data):
+    def _origmai_send_data(self, data, dataType):
+        """
+        Core function which sends output to either the origami server or the
+        user as response to request
+
+        Args:
+            data: list or tuple of string to be sent.
+            dataType: Key for data in payload python dict
+                can be either of `data` or `terminalData`
+
+        Returns:
+            resp: Response we sent to user as API response or response from
+                the origami server.
+        """
+        resp = None
+        socketId = user_req.form.get(constants.REQUEST_SOCKET_ID_KEY, type=str)
+        # Check if a valid socketId is provided in the request
+        # else consider it as an API request.
+        if socketId:
+            # Check if the socket-id is there is the request form.
+            payload = {
+                "socketId": socketId,
+                dataType: data
+            }
+            resp = self.request_origami_server(payload)
+        else:
+            # TODO: Discuss the strucutre of API response payload.
+            payload = {
+                "data": data
+            }
+            resp = self._send_api_response(payload)
+        return resp
+
+    def send_text_array(self, data, dataType=constants.DEFAULT_DATA_TYPE_KEY):
         """
         Send text data array to origami_server with the users socket ID
 
         Args:
             data: list or tuple of string to be sent.
+            dataType: Key for data in payload python dict
+                can be either of data or terminalData
 
         Returns:
             resp: Response text we got back from the origami server
@@ -240,6 +290,10 @@ class OrigamiOutputs(OrigamiRequester):
             MismatchTypeException: Type of the data provided to function is not
                 what we expected.
         """
+
+        # TODO: make dataType more explicit here use different types for images
+        # and graphs too so they can be handled properly via origami.
+
         if not isinstance(data, (list, tuple)):
             raise exceptions.MismatchTypeException(
                 "send_text_array can only accept an array or a tuple")
@@ -248,23 +302,48 @@ class OrigamiOutputs(OrigamiRequester):
             raise exceptions.MismatchTypeException(
                 "send_text_array expects a list or tuple of string")
 
-        resp = None
-        socketId = user_req.form.get('socket-id', type=str)
-        # Check if a valid socketId is provided in the request
-        # else consider it as an API request.
-        if socketId:
-            # Check if the socket-id is there is the request form.
-            payload = {
-                'socketId': socketId,
-                'data': data
-            }
-            resp = self.request_origami_server(payload)
-        else:
-            # TODO: Discuss the strucutre of API response payload.
-            payload = {
-                'data': data
-            }
-            resp = self._send_api_response(payload)
+        resp = self._origmai_send_data(data, dataType)
+        return resp
+
+    def send_graph_array(self, data):
+        """
+        Send text data array to origami_server with the users socket ID
+
+        Args:
+            data: list or tuple of list/tuple to be sent.
+
+        Returns:
+            resp: Response text we got back from the origami server
+            corresponding to the request we made.
+
+        Raises:
+            MismatchTypeException: Type of the data provided to function is not
+                what we expected.
+        """
+
+        if not isinstance(data, (list, tuple)):
+            raise exceptions.MismatchTypeException(
+                "send_graph_array can only accept an array or a tuple.")
+
+        if not all(isinstance(element, (list, tuple)) for element in data):
+            raise exceptions.MismatchTypeException(
+                "send_graph_array expects a list/tuple of list/tuple")
+
+        resp = self._origmai_send_data(data, constants.DEFAULT_DATA_TYPE_KEY)
+        return resp
+
+    def send_text_array_to_terminal(self, data):
+        """
+        Send the array/tuple provided as argument to the origami server
+        as a terminal data.
+
+        Args:
+            data: array/tuple of strings to be sent.
+
+        Returns:
+            resp: response got from sending the data.
+        """
+        resp = self.send_text_array(data, constants.TERMINAL_DATA_TYPE_KEY)
         return resp
 
 
@@ -275,27 +354,56 @@ class Origami(OrigamiInputs, OrigamiOutputs):
     the web interface.
 
     Attributes:
-        app_name: Application name.
-        token: Origami token for the application.
-        target: target of the interface CV/user deployment
+        name: Application name.
+        origami_server_base: URL for origami server running.
 
         server: Flask server for origami
         cors: CORS for flask server running
         mime: Mime type to deal with images for flask server
     """
 
-    def __init__(self, app_name, token):
+    def __init__(self, name, server_base=constants.ORIGAMI_SERVER_BASE_URL):
         """
         Inits class with provided arguments
         """
 
-        self.app_name = app_name
-        self.token = validate_token(token)
-        self.target = parse_target(token)
+        self.app_name = name
+        self.origami_server_base = server_base
+        # self.token = validate_token(token)
+        # self.target = parse_target(token)
 
         self.server = Flask(__name__)
         self.cors = CORS(self.server)
         self.mime = magic.Magic(mime=True)
+
+    def _get_origami_server_target_url(self):
+        """
+        Returns orgiami server target url for flask server to use for injecting
+        output.
+
+        Returns:
+            target_url: Origami server target url
+
+        Raises:
+            MismatchTypeException: Error occured when correct type of token is
+                not supplied.
+        """
+        try:
+            assert isinstance(self.origami_server_base, str)
+        except AssertionError:
+            raise exceptions.MismatchTypeException(
+                "Server base url type mismatch: string expected given %s"
+                .format(type(self.origami_server_base)))
+
+        target_protocol = constants.HTTPS_ENDPOINT
+        if re.search(constants.LOCAL_TARGET_REGEXP, self.origami_server_base):
+            target_protocol = constants.HTTP_ENDPOINT
+
+        target_url = "{0}{1}{2}".format(
+            target_protocol,
+            self.origami_server_base,
+            constants.ORIGAMI_SERVER_INJECTION_PATH)
+        return target_url
 
     def listen(self, route=constants.ORIGAMI_DEFAULT_EVENT_ROUTE):
         """ Listen decorator wrapper for origami
@@ -317,7 +425,7 @@ class Origami(OrigamiInputs, OrigamiOutputs):
                 bind to is already in use.
         """
         try:
-            port = int(self.token.split(':')[4])
+            port = constants.DEFAULT_PORT
             http_server = HTTPServer(WSGIContainer(self.server))
             http_server.listen(port)
             print("Origami server running on port: {}".format(port))
