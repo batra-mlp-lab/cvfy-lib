@@ -7,7 +7,6 @@ from tornado.wsgi import WSGIContainer
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 
-
 from origami import constants, exceptions, utils
 
 
@@ -87,6 +86,7 @@ class OrigamiPipeline(object):
     Handles various pipeline functions such as fetching and saving data from
     and to cache.
     """
+
     def __init__(self):
         pass
 
@@ -99,6 +99,7 @@ class OrigamiInputs(OrigamiPipeline):
     Class implementing input functions for Origami, this class will be
     inherited by main Origami class.
     """
+
     def __init__(self):
         pass
 
@@ -222,10 +223,12 @@ class OrigamiOutputs(OrigamiRequester):
             Wrapper fuction that calls the view_func to do its work
             and then returns the response back to user.
         """
+
         def _wrapper():
             view_func()
             response = self._clear_response()
             return response
+
         return _wrapper
 
     def _origmai_send_data(self, data, dataType):
@@ -248,16 +251,11 @@ class OrigamiOutputs(OrigamiRequester):
         # else consider it as an API request.
         if socketId:
             # Check if the socket-id is there is the request form.
-            payload = {
-                "socketId": socketId,
-                dataType: data
-            }
+            payload = {"socketId": socketId, dataType: data}
             resp = self.request_origami_server(payload)
         else:
             # TODO: Discuss the strucutre of API response payload.
-            payload = {
-                "data": data
-            }
+            payload = {"data": data}
             resp = self._send_api_response(payload)
         return resp
 
@@ -387,10 +385,9 @@ class Origami(OrigamiInputs, OrigamiOutputs):
         if re.search(constants.LOCAL_TARGET_REGEXP, self.origami_server_base):
             target_protocol = constants.HTTP_ENDPOINT
 
-        target_url = "{0}{1}{2}".format(
-            target_protocol,
-            self.origami_server_base,
-            constants.ORIGAMI_SERVER_INJECTION_PATH)
+        target_url = "{0}{1}{2}".format(target_protocol,
+                                        self.origami_server_base,
+                                        constants.ORIGAMI_SERVER_INJECTION_PATH)
         return target_url
 
     def listen(self, route=constants.ORIGAMI_DEFAULT_EVENT_ROUTE):
@@ -402,7 +399,11 @@ class Origami(OrigamiInputs, OrigamiOutputs):
         Args:
             route: route to be uesd by origami web interface for interaction
         """
-        return self.server.route(route, methods=["GET", "POST", ])
+        return self.server.route(
+            route, methods=[
+                "GET",
+                "POST",
+            ])
 
     def run(self):
         """
