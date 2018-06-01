@@ -32,10 +32,11 @@ def test():
     # 1 for image array using filepath, 
     # 2 for image array using np array, 
     # 3 for all
+    # 4 for text array length,
+    # 5 fpr image array length
     tnum = origami.request.form['test_number']
 
     if tnum == '0':
-        print('hello')
         # test getTextArray
         all_text = origami.getTextArray()
         print('Received %d text strings'%(len(all_text)))
@@ -62,6 +63,18 @@ def test():
         return jsonify({'text': all_text, 
                         'filepaths': all_image_paths, 
                         'images': [a.tolist() for a in all_images]}), 200
+
+    elif tnum == '4':
+        all_text = origami.getTextArray()
+        return jsonify({
+            'data': len(all_text)
+        })
+
+    elif tnum == '5':
+        all_images = origami.getImageArray(mode='numpy_array')
+        return jsonify({
+            'data': len(all_images)
+        })
 
     else:
         return 'Please define test number', 500

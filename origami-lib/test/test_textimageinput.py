@@ -28,14 +28,14 @@ def test_getTextInput():
     assert(len(text_array) == 3)
     assert(text_array == ['hello', 'world', 'Is this a sample question?'])
 
-# send wrong strings
-def test_getWrongTextInput():
-    data_copy = data.copy()
-    data_copy['test_number'] = 0
-    data_copy['input-text-0'] = 'goodbye'
-    r = requests.post(url=url, data=data_copy)
+def test_getEmptyTextInput():
+    r = requests.post(url=url, data={
+        'input-text-0': None,
+        'test_number': 0
+    })
     text_array = json.loads(r.content)['data']
-    assert(text_array != ['hello', 'world', 'Is this a sample question?'])
+    assert(len(text_array) == 0)
+    assert(text_array == [])
 
 # send more text strings than expected
 def test_getExtraTextInput():
@@ -87,6 +87,22 @@ def test_getWrongImageInput():
     assert(len(images) == len(image_list))
     for i in range(len(images)):
         assert(not np.array_equal(np.array(images[i], dtype=np.int16), cv2.imread(image_list[i])))
+
+def test_getLengthTextInput():
+    data_copy = data.copy()
+    data_copy['test_number'] = 4
+    r = requests.post(url=url, data=data_copy)
+    length = json.loads(r.content)['data']
+    asset(length == len(data) - 1)
+
+def test_getLengthImageInput():
+    files = {}
+    for i in range(len(image_list)):
+        with open(image_list[i], 'rb') as f:
+            files['input-image-%d'%(i)] = f.read()
+    r = requests.post(url=url, files=files, data={'test_number': 5})
+    length = json.loads(r.content)['data']
+    assert(length == len(image_list))
 
 # send both the text data and image data at once
 def test_all():
