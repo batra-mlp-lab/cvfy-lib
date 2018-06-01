@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages
 
-PROJECT = "origami-lib"
+PROJECT = "origami"
 
 with open('README.md') as readme_file:
     README = readme_file.read()
