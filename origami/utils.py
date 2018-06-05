@@ -1,6 +1,7 @@
 import cv2
 import io
 import numpy as np
+import sys
 
 from origami import exceptions, constants
 
@@ -92,3 +93,20 @@ def get_image_as_numpy_arr(image_files_arr):
         images_np_arr.append(image)
 
     return images_np_arr
+
+
+def check_if_string(data):
+    """
+    Takes a data as argument and checks if the provided argument is an
+    instance of string or not
+
+    Args:
+        data: Data to check for.
+
+    Returns:
+        result: Returns a boolean if the data provided is instance or not
+    """
+    if sys.version_info[0] == 2:
+        return isinstance(data, basestring)
+    else:
+        return isinstance(data, str)

@@ -10,14 +10,14 @@ class OrigamiException(Exception):
 
 class MismatchTypeException(OrigamiException):
     """
-    These exceptions are caused during mismatched types.
+    These exceptions are cause during mismatched types.
     """
     STATUS_CODE = 501
 
 
 class OrigamiServerException(OrigamiException):
     """
-    These exceptions are caused during mismatched types.
+    These exceptions are cause during mismatched types.
     """
     STATUS_CODE = 502
 
