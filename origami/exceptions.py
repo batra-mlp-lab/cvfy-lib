@@ -2,7 +2,7 @@ class OrigamiException(Exception):
     """
     Base class for all exceptions thrown by origami.
     """
-    STATUS_CODE = 500
+    STATUS_CODE = 1
 
     def __init__(self, message=''):
         super().__init__("[{0}] => {1}".format(self.STATUS_CODE, message))
@@ -22,12 +22,19 @@ class InputHandlerException(OrigamiException):
     STATUS_CODE = 300
 
 
+class OutputHandlerException(OrigamiException):
+    """
+    Exception while handling data for sending output to user.
+    """
+    STATUS_CODE = 301
+
+
 class InvalidRequestParameterGet(OrigamiException):
     """
     These exceptions are caused when reqeusting invalid input parameters from
     user request.
     """
-    STATUS_CODE = 301
+    STATUS_CODE = 302
 
 
 class OrigamiRequesterException(OrigamiException):
@@ -66,8 +73,30 @@ class InvalidTokenException(OrigamiException):
     STATUS_CODE = 500
 
 
+class InavalidMimeTypeException(OrigamiException):
+    """
+    The mime type provided for image is not valid
+    """
+    STATUS_CODE = 501
+
+
+class InvalidFilePathException(OrigamiException):
+    """
+    File not found for the path provided
+    """
+    STATUS_CODE = 502
+
+
 class OrigamiServerException(OrigamiException):
     """
     These exceptions are caused during error during server running.
     """
-    STATUS_CODE = 501
+    STATUS_CODE = 503
+
+
+class FileHandlingException(OrigamiException):
+    """
+    Genric exception when error during handling file
+    (create, update, read, delete)
+    """
+    STATUS_CODE = 504

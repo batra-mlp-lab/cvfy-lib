@@ -1,6 +1,5 @@
 from flask import Flask, request as user_req, jsonify
 from flask_cors import CORS, cross_origin
-import magic
 import requests
 import re
 from tornado.wsgi import WSGIContainer
@@ -249,15 +248,20 @@ class OrigamiOutputs(OrigamiRequester):
         socketId = user_req.form.get(constants.REQUEST_SOCKET_ID_KEY, type=str)
         # Check if a valid socketId is provided in the request
         # else consider it as an API request.
+
         if socketId:
             # Check if the socket-id is there is the request form.
             payload = {"socketId": socketId, dataType: data}
             resp = self.request_origami_server(payload)
+
         else:
             # TODO: Discuss the strucutre of API response payload.
             payload = {"data": data}
             resp = self._send_api_response(payload)
+
         return resp
+
+    # Data sending functions
 
     def send_text_array(self, data, dataType=constants.DEFAULT_DATA_TYPE_KEY):
         """
@@ -332,6 +336,49 @@ class OrigamiOutputs(OrigamiRequester):
         resp = self.send_text_array(data, constants.TERMINAL_DATA_TYPE_KEY)
         return resp
 
+    def send_image_array(self,
+                         data,
+                         mode=constants.INPUT_IMAGE_ARRAY_FILEPATH_MODE):
+        """
+        Send image array as base64 encoded images list.
+
+        Args:
+            data: list/tuple of either image path or numpy array
+            mode: mode in which to process the data
+
+        Returns:
+            resp: response got from sending the data.
+
+        Raises:
+            MismatchTypeException: data is not of list/tuple type
+        """
+        if not isinstance(data, (list, tuple)):
+            raise exceptions.MismatchTypeException(
+                "send_image_array can only accept a list or a tuple.")
+
+        image_arr = []
+
+        # Mode -> file_path
+        if mode == constants.INPUT_IMAGE_ARRAY_FILEPATH_MODE:
+            for file_path in data:
+                img_src = utils.get_base64_image_from_file(file_path)
+                image_arr.append(img_src)
+
+        # Mode -> NP Array
+        elif mode == constants.INPUT_IMAGE_ARRAY_NPARRAY_MODE:
+            for np_image_arr in data:
+                img_src = utils.get_base64_image_from_nparr(np_image_arr)
+                image_arr.append(img_src)
+
+        else:
+            raise exceptions.OutputHandlerException(
+                "Not a valid mode({0}) provided when encoding image for sending",
+                mode)
+
+        resp = self._origmai_send_data(image_arr,
+                                       constants.DEFAULT_DATA_TYPE_KEY)
+        return resp
+
 
 class Origami(OrigamiInputs, OrigamiOutputs):
     """ Origami class to declare the main app
@@ -345,7 +392,6 @@ class Origami(OrigamiInputs, OrigamiOutputs):
 
         server: Flask server for origami
         cors: CORS for flask server running
-        mime: Mime type to deal with images for flask server
     """
 
     def __init__(self, name, server_base=constants.ORIGAMI_SERVER_BASE_URL):
@@ -360,7 +406,6 @@ class Origami(OrigamiInputs, OrigamiOutputs):
 
         self.server = Flask(__name__)
         self.cors = CORS(self.server)
-        self.mime = magic.Magic(mime=True)
 
     def _get_origami_server_target_url(self):
         """

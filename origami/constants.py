@@ -30,3 +30,12 @@ DEFAULT_DATA_TYPE_KEY = "data"
 TERMINAL_DATA_TYPE_KEY = "terminalData"
 
 REQUEST_SOCKET_ID_KEY = "socket-id"
+
+IMAGE_JPEG_BASE64_SIG = "data:image/jpeg;base64,"
+IMAGE_PNG_BASE64_SIG = "data:image/png;base64,"
+
+MIME_TYPE_JPEG = "image/jpeg"
+MIME_TYPE_JPG = "image/jpg"
+MIME_TYPE_PNG = "image/png"
+
+TMP_DIR_BASE_PATH = "/tmp"
