@@ -400,6 +400,25 @@ class OrigamiOutputs(OrigamiRequester):
 class _OrigamiWebSocketHandler(WebSocketHandler):
     """
     Handles persistent websocket connections for Origami
+
+    Attributes:
+        persistent_conn_map:
+            This is a list of object containing information about each
+            registered persistent connection. The structure of the object is:
+
+            {
+                "id": socketId,
+                "func": func,
+                "arguments": args
+            }
+
+            ID: SocketID for registering user
+            func: routine to execute when the request from websocket is made
+            arguments: a list of arguments to be provided to func.
+
+            Each time a user connection is registered an entry is made in this
+            mapping list. An entry from the map is deleted when the client closes
+            the websocket for the connection.
     """
     # A persistent connection mapping.
     # Static variable, a single copy for all the connection.
@@ -412,8 +431,35 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
         First check whether the func is callable and args should be a list
         then add the func with args and socketID to the global map.
 
+        For each request that comes to demo, the `socket-id` of the client needs to be registered
+        this will done using this function, it register a function for a persistent connection with
+        the argument provided. Apart from the arguments in this function `func` will also require
+        to have an additional parameter ``message`` which will contain the input from the websocket
+        as a string.
+
+        For example
+
+        .. code-block:: python
+            def my_func(arg1, arg2, message=""):
+                print("Message from websocket is : ", message)
+                print("Arguments are :: ", arg1, arg2)
+
+            @app.listen()
+            @app.origami_api
+            def hello():
+                arr = ['Hello', 'World!']
+                text_arr = app.send_text_array()
+                # Register a function here
+                app.register_persistent_connection(my_func, ["my argument", "secondArg"])
+
+        Now for the above example whenever a request a recieved a persistent connection
+        will be registered between client and demo. Once the user sends some data from
+        the websocket, the function registerd will be called with the corresponding
+        message.
+
+
         Args:
-            func: function to execute
+            func: function to execute for the message recieved from the websocket.
             args: list of arguments.
 
         Returns:
@@ -451,6 +497,8 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
     def check_origin(self, origin):
         """
         Overridden function from WebSocketHandler for CORS policy.
+        This ensures that websocket connection can be made from any
+        origin.
         """
         return True
 
@@ -534,6 +582,9 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
 
         Args:
             message: message from the websocket connection
+                This message is what we got from the websocket, first we need to
+                validate it and then extract the required matter from it which will
+                then be used by the registered function.
         """
         data = self._validate_message(message)
         if data:
@@ -557,6 +608,29 @@ class Origami(OrigamiInputs, OrigamiOutputs, _OrigamiWebSocketHandler):
 
     This class initializes the app and provides methods to interact with
     the web interface.
+
+    This is the main interface for interacting with Origami, it provides all
+    the necessery methods to be used by the user for demo deployment and user
+    interaction.
+
+    To create an Origami app
+
+    .. code-block:: python
+        from origami.origami import Origami
+
+        app = Origami("vqa")
+
+        @app.listen("/event")
+        @app.origami_api
+        def hello():
+            arr = ['Hello', 'World!']
+            text_arr = app.send_text_array()
+            return
+
+        # App configuration have been established, spin the demo
+        # This is a blocking call, so anything after this won't be executed.
+        app.run()
+
 
     Attributes:
         name: Application name.
