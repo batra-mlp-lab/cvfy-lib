@@ -116,6 +116,26 @@ def check_if_string(data):
         return isinstance(data, str)
 
 
+def strict_check_array_of_string(data):
+    """
+    Checks if the argument provided is a list/tuple of string.
+
+    Args:
+        data: Data to be validated corresponding to array of string
+
+    Raises:
+        MismatchTypeException: Exception that the required type did not match
+            catch this to handle non array of strings.
+    """
+    if not isinstance(data, (list, tuple)):
+        raise exceptions.MismatchTypeException(
+            "send_text_array can only accept an array or a tuple")
+
+    if not all(check_if_string(element) for element in data):
+        raise exceptions.MismatchTypeException(
+            "send_text_array expects a list or tuple of string")
+
+
 def get_base64_image_from_file(file_path):
     """
     Takes image file_path as an argument and returns a base64 encoded string corresponding to
