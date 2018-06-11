@@ -24,6 +24,13 @@ class InvalidCachePathException(OrigamiException):
     STATUS_CODE = 200
 
 
+class MalformedCacheException(OrigamiException):
+    """
+    The contents of the cache files are malformed.
+    """
+    STATUS_CODE = 201
+
+
 class InputHandlerException(OrigamiException):
     """
     Exception while handling user request input.
