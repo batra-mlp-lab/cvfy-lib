@@ -1,3 +1,7 @@
+import ast
+import cv2
+import hashlib
+import numpy as np
 import os
 import shutil
 import uuid
@@ -83,9 +87,54 @@ class OrigamiCache(object):
         cache_id = self.__create_cache()
         return cache_id
 
+    def __write_python_list_to_file(self, file_path, text_array):
+        """
+        Takes a file path and a list of strings and writes the whole data structure
+        to the file. This file is internal to the class and hence assumes that any
+        argument provided to it must be sanitized and checked for earlier.
+
+        This function does nothing more than just writing the data structure to the file.
+
+        Args:
+            file_path(str): Path to store the data to
+            text_array(list): A list of strings to be stored in the file.
+        """
+        with open(file_path, "w") as file:
+            # Write it to the cache file as an array of string.
+            text_array = ['"{}"'.format(x) for x in text_array]
+            file.write('[' + ', '.join(text_array) + ']')
+
+    def __read_from_file_as_python_list(self, file_path):
+        """
+        Takes a file_path(A cache file) and parses it for a python list using ast
+        module.
+
+        Args:
+            file_path: Path of the file to parse.
+
+        Raises:
+            MalformedCacheException: The cache file we are trying to parse is malformed.
+            InvalidCachePathException: The path provided to read does not exist.
+        """
+        if os.path.exists(file_path):
+            with open(file_path, "r") as cache_file:
+                content = cache_file.read()
+                try:
+                    eval_ds = ast.literal_eval(content.strip())
+                    return eval_ds
+                except ValueError:
+                    raise exceptions.MalformedCacheException(
+                        "Text cache does not contain a valid string to be evaluated"
+                    )
+        else:
+            raise exceptions.InvalidCachePathException(
+                "No valid cache file found :: {}".format(file_path))
+
     def save_text_array_to_cache(self, text_array):
         """
         Takes an array of string and saves it to cache file on the disk.
+        This checks first for the validity of the text_array provided and then
+        calls a function to write to the file.
 
         Args:
             text_array: array of strings to be saved in the text file cache.
@@ -94,10 +143,7 @@ class OrigamiCache(object):
         text_cache_path = os.path.join(self.cache_dir,
                                        constants.TEXT_CACHE_FILE)
 
-        with open(text_cache_path, "w") as file:
-            # Write it to the cache file as an array of string.
-            text_array = ['"{}"'.format(x) for x in text_array]
-            file.write('[' + ', '.join(text_array) + ']')
+        self.__write_python_list_to_file(text_cache_path, text_array)
 
     def load_text_array_from_cache(self):
         """
@@ -117,30 +163,110 @@ class OrigamiCache(object):
         text_cache_path = os.path.join(self.cache_dir,
                                        constants.TEXT_CACHE_FILE)
 
-        if os.path.exists(text_cache_path):
-            with open(text_cache_path, "r") as cache_file:
-                content = cache_file.read()
-                try:
-                    eval_ds = ast.literal_eval(content.strip())
-                    return eval_ds
-                except ValueError:
-                    raise exceptions.MalformedCacheException(
-                        "Text cache does not contain a valid string to be evaluated"
-                    )
-        else:
-            raise exceptions.InvalidCachePathException(
-                "No valid cache file found :: {}".format(text_cache_path))
+        text_arr = self.__read_from_file_as_python_list(text_cache_path)
+        return text_arr
 
-    def cache_image_file_array(self, image_inputs):
+    def __create_blobs_from_image_objects(self, image_objects_arr):
+        """
+        Takes in an array of image_object like the one retrived from the request files
+        and saves it to disk in the cache directory as a blob. Each blob has a name which
+        corresponds to the MD5 hash of the image file. This ensures that no duplicate files
+        are stored twice and uses the same blobs for reference.
+
+        After saving the blobs to image blobs cache directory, it writes all the blobs hash
+        to a file image.cache which can then be used to lookup for the available blobs. This
+        file have a structure wherein it contains the blobs in the form of python list.
+        So to read this use the function __read_from_file_as_python_list(). It will return
+        a python list of blobs hash.
+
+        Args:
+            image_objects_arr: An array of image object(should be checked before here for type)
+                which will be cached by creating blobs from the file.
+
+        Returns:
+            image_blobs_hash: A python list containing the blobs hash which are saved into the
+                image cache directory.
+
+        Raises:
+            BlobCreationException: Each image_object is converted to blob to be saved individually
+                this exception is thrown when there is an error during this process for any image
+                object.
+        """
+        image_blobs_hash = []
+        image_cache_dir = os.path.join(self.cache_dir,
+                                       constants.IMAGE_BLOBS_DIR)
+        try:
+            for image_object in image_objects_arr:
+                image_object.seek(0)
+                blob_hash = hashlib.md5(image_object.read()).hexdigest()
+
+                image_blobs_hash.append(blob_hash)
+                image_blob_path = os.path.join(image_cache_dir, blob_hash)
+                with open(image_blob_path, "wb") as file:
+                    image_object.seek(0)
+                    file.write(image_object.read())
+                    image_object.seek(0)
+
+        except Exception as e:
+            raise exceptions.BlobCreationException(
+                "Exception occured while creating blobs from image object array : {}".
+                format(e))
+
+        image_cache_file = os.path.join(self.cache_dir,
+                                        constants.IMAGE_CACHE_FILE)
+        self.__write_python_list_to_file(image_cache_file, image_blobs_hash)
+
+        return image_blobs_hash
+
+    def save_image_file_array_to_cache(self, image_objects):
         """
         Save an array of image to the global origami cache. The provided image inputs
         should be a list/tuple of images.
 
         Args:
-            image_inputs: list/tuple of images to be saved.
+            image_objects: list/tuple of images to be saved.
 
+        Raises:
+            MismatchTypeException: Image objects in the argument should be a python list
+                or a tuple. THis is raised when this type is mismatched.
         """
-        if not isinstance(image_inputs, (list, tuple)):
+        if not isinstance(image_objects, (list, tuple)):
             raise exceptions.MismatchTypeException(
                 "send_text_array can only accept an array or a tuple")
-        pass
+
+        return self.__create_blobs_from_image_objects(image_objects)
+
+    def load_image_file_paths_from_cache(self):
+        """
+        Gives the list of image blobs paths from the cache.
+
+        Returns:
+            image_file_paths: Image file paths stored in the cache.
+        """
+        image_cache_file_path = os.path.join(self.cache_dir,
+                                             constants.IMAGE_CACHE_FILE)
+        blob_hash_list = self.__read_from_file_as_python_list(
+            image_cache_file_path)
+
+        image_file_paths = []
+        for blob_hash in blob_hash_list:
+            image_file_paths.append(
+                os.path.join(self.cache_cache_dir, constants.IMAGE_BLOBS_DIR,
+                             blob_hash))
+
+        return image_file_paths
+
+    def load_image_nparr_from_cache(self):
+        """
+        Gives the list of image as numpy array from the cache.
+
+        Returns:
+            image_nparr_list: Image stored in the caches as numpy array.
+        """
+        image_file_paths = self.load_image_file_paths_from_cache()
+        image_nparr_list = []
+        for image_path in image_file_paths:
+            image = cv2.imread(image_path)
+            image_nparr_list.append(np.array(image))
+
+        return image_nparr_list

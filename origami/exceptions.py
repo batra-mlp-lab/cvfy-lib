@@ -31,6 +31,14 @@ class MalformedCacheException(OrigamiException):
     STATUS_CODE = 201
 
 
+class BlobCreationException(OrigamiException):
+    """
+    Exception during creating a blob(for image) to cache into the disk
+    from image_object(generally from user request files).
+    """
+    STATUS_CODE = 202
+
+
 class InputHandlerException(OrigamiException):
     """
     Exception while handling user request input.
