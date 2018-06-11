@@ -1,7 +1,11 @@
+import base64
 import cv2
 import io
+import magic
 import numpy as np
+import os
 import sys
+import uuid
 
 from origami import exceptions, constants
 
@@ -110,3 +114,63 @@ def check_if_string(data):
         return isinstance(data, basestring)
     else:
         return isinstance(data, str)
+
+
+def get_base64_image_from_file(file_path):
+    """
+    Takes image file_path as an argument and returns a base64 encoded string corresponding to
+    the image.
+
+    Args:
+        file_path: Image path
+
+    Returs:
+        src: base64 encoded image.
+
+    Raises:
+        InvalidMimeTypeException: Image does not have a vaild mime type to process
+        InvalidFilePathException: File trying to access is not found.
+    """
+    try:
+        with open(file_path, "rb") as file:
+            mime = magic.Magic(mime=True)
+            content_type = mime.from_file(file_path)
+            if content_type == constants.MIME_TYPE_JPEG or content_type == constants.MIME_TYPE_JPG:
+                src = constants.IMAGE_JPEG_BASE64_SIG
+            elif content_type == constants.MIME_TYPE_PNG:
+                src = constants.IMAGE_PNG_BASE64_SIG
+            else:
+                raise exceptions.InavalidMimeTypeException(
+                    "Not a valid mime type for image : {}", content_type)
+            src += str(base64.b64encode(file.read()))
+            return src
+
+    except FileNotFoundError:
+        raise exceptions.InvalidFilePathException(
+            "No file found matching the path {}", file_path)
+
+
+def get_base64_image_from_nparr(image_nparr):
+    """
+    Takes a numpy image array as input and returns base64 encoded image string
+
+    Args:
+        image_nparr: Numpy array for the image.
+
+    Returns:
+        image_src: base64 encoded image string
+
+    Raises:
+        FileHandlingException: Error while handling file created to get base64
+            encoded string from np array using cv2
+    """
+    try:
+        path = os.path.join(constants.TMP_DIR_BASE_PATH, str(uuid.uuid4()))
+        cv2.imwrite(path, image_nparr)
+        img_src = get_base64_image_from_file(path)
+        os.remove(path)
+        return img_src
+
+    except OSError:
+        raise exceptions.FileHandlingException(
+            "Cannot write NP array to the path {} using cv2", path)
