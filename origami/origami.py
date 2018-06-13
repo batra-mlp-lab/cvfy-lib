@@ -8,7 +8,6 @@ from tornado.wsgi import WSGIContainer
 from tornado.web import Application, FallbackHandler
 from tornado.ioloop import IOLoop
 from tornado.websocket import WebSocketHandler
-import uuid
 
 from origami import constants, exceptions, utils
 from origami.pipeline import OrigamiCache
@@ -402,8 +401,8 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
                 the connection maps.
 
             Each time a user connection is registered an entry is made in this
-            mapping list. An entry from the map is deleted when the client closes
-            the websocket for the connection.
+            mapping list. An entry from the map is deleted when the client
+            closes the websocket for the connection.
     """
     # A persistent connection mapping.
     # Static variable, a single copy for all the connection.
@@ -416,11 +415,12 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
         First check whether the func is callable and args should be a list
         then add the func with args and socketID to the global map.
 
-        For each request that comes to demo, the `socket-id` of the client needs to be registered
-        this will done using this function, it register a function for a persistent connection with
-        the argument provided. Apart from the arguments in this function `func` will also require
-        to have an additional parameter ``message`` which will contain the input from the websocket
-        as a string.
+        For each request that comes to demo, the `socket-id` of the client needs
+        to be registered this will done using this function, it register a
+        function for a persistent connection with the argument provided. Apart
+        from the arguments in this function `func` will also require to have an
+        additional parameter ``message`` which will contain the input from the
+        websocket as a string.
 
         For example
 
@@ -436,23 +436,25 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
                 text_arr = app.send_text_array()
 
                 # Register a function here
-                # You can think this of like a python decorator wherein you are essentially
+                # You can think this of like a python decorator wherein you areessentially
                 # enclosing a function inside other. So hello() is the function which will
                 # setup the environment for my_func which will be executed withing the
                 # environment each time user makes a request using websockets.
                 # Args is the list of arguments you want to send for the function in the same
                 # order, they are what passed as the state of this connectino to the function.
 
-                app.register_persistent_connection(my_func, ["my argument", "secondArg"])
+                app.register_persistent_connection(my_func,
+                    ["my argument", "secondArg"])
 
-        Now for the above example whenever a request a recieved a persistent connection
-        will be registered between client and demo. Once the user sends some data from
-        the websocket, the function registerd will be called with the corresponding
-        message.
+        Now for the above example whenever a request a recieved a persistent
+        connection will be registered between client and demo. Once the user
+        sends some data from the websocket, the function registerd will be
+        called with the corresponding message.
 
 
         Args:
-            func: function to execute for the message recieved from the websocket.
+            func: function to execute for the message recieved from the
+                websocket.
             args: list of arguments.
 
         Returns:
@@ -475,7 +477,7 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
                 # Try to check if a connection with the give socket-id already exist
                 dup_conn = next(
                     x for x in self.persistent_conn_map if x["id"] == socketId)
-                self.__clear_connection(x)
+                self.__clear_connection(dup_conn)
             except StopIteration:
                 # No connection with the socket ID found.
                 self.persistent_conn_map.append({
@@ -489,7 +491,7 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
             # This is the case when the user is requesting without socket-id
             self._clear_response()
             payload = {"ERROR": "Not available over API"}
-            resp = self._send_api_response(payload)
+            self._send_api_response(payload)
             return False
 
     def check_origin(self, origin):
@@ -503,14 +505,15 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
     def __clear_connection(self, conn=None):
         """
         Clear the active connection from the persistent connection map.
-        Remove the object self.active_connection from the list persistent_connections_map
+        Remove the object self.active_connection from the list
+        persistent_connections_map
         """
         conn = conn if conn else self.active_connection
         if conn:
             try:
                 dup_conn = next(x for x in self.persistent_conn_map
                                 if x["id"] == conn["id"])
-                self.persistent_conn_map.remove(x)
+                self.persistent_conn_map.remove(dup_conn)
             except StopIteration:
                 pass
 
@@ -584,8 +587,8 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
         Args:
             message: message from the websocket connection
                 This message is what we got from the websocket, first we need to
-                validate it and then extract the required matter from it which will
-                then be used by the registered function.
+                validate it and then extract the required matter from it which
+                will then be used by the registered function.
         """
         data = self._validate_message(message)
         if data:
@@ -595,7 +598,7 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
                 # Send the out_msg returned from the function.
                 if isinstance(out_msg, dict):
                     json_resp = json.dumps(out_msg)
-                    self.write_message(out_msg)
+                    self.write_message(json_resp)
                 elif utils.check_if_string(out_msg):
                     self.write_message(out_msg)
                     # self._origmai_send_data(
@@ -604,13 +607,13 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
                     print(
                         "A persistent connection can only return a python dict or string"
                     )
-            except:
+            except Exception as e:
                 pass
 
     def on_close(self):
         """
-        WebSocket connection is closed, clear the active connection that we were using
-        and reset the connection variables.
+        WebSocket connection is closed, clear the active connection that we were
+        using and reset the connection variables.
         """
         self.__clear_connection()
         self.__reset_connection()
@@ -715,9 +718,11 @@ class Origami(OrigamiInputs, OrigamiOutputs, _OrigamiWebSocketHandler):
     def run(self):
         """
         Starts the flask server over Tornados WSGI Container interface
-        Also provide websocket interface at /websocket for persistent connections
+        Also provide websocket interface at /websocket for persistent
+        connections
 
-        To run this server just create an instance of Origami Class and call this function
+        To run this server just create an instance of Origami Class and call
+        this function
 
         .. code-block:: python
             from origami import Origami

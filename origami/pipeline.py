@@ -15,9 +15,10 @@ class OrigamiCache(object):
     and to cache.
 
     This essentially is not cache since all the storage is done on the disk,
-    and since IO are resource expensive this does not essentially increases speed
-    in any sense. The main use of this here is for persistence, this can be also for large
-    amount of data wherein it is not possible to store all of it in the memory.
+    and since IO are resource expensive this does not essentially increases
+    speed in any sense. The main use of this here is for persistence, this
+    can be also for large amount of data wherein it is not possible to store
+    all of it in the memory.
 
     .. code-block:: python
         from origami import OrigamiCache
@@ -30,7 +31,8 @@ class OrigamiCache(object):
         print(new_arr)
 
     Attributes:
-        global_cache_path: Path for all the file interaction for pipeline functions
+        global_cache_path: Path for all the file interaction for pipeline
+            functions
         cache_id: ID for the current cache object
         cache_dir: Cache dir corresponding to global_cache_path and cache_id
     """
@@ -43,13 +45,15 @@ class OrigamiCache(object):
 
     def __create_cache(self):
         """
-        Create a cache space in global_cache_path and return the ID/directory to that.
+        Create a cache space in global_cache_path and return the ID/directory to
+        that.
 
         Returns:
             cache_id: Cache ID to reference the cache in future.
 
         Raises:
-            FileHandlingException: Exception during creating directory for the cache.
+            FileHandlingException: Exception during creating directory for the
+                cache.
         """
         self.cache_id = uuid.uuid4()
         self.cache_dir = os.path.join(self.global_cache_path, self.cache_id)
@@ -73,12 +77,13 @@ class OrigamiCache(object):
                 shutil.rmtree(self.cache_dir)
                 self.cache_dir = ""
             self.cache_id = ""
-        except:
+        except Exception as e:
             pass
 
     def new_cache(self):
         """
-        Create a cache space in global_cache_path and return the ID/directory to that.
+        Create a cache space in global_cache_path and return the ID/directory to
+        that.
 
         Returns:
             cache_id: Cache ID to reference the cache in future.
@@ -89,11 +94,13 @@ class OrigamiCache(object):
 
     def __write_python_list_to_file(self, file_path, text_array):
         """
-        Takes a file path and a list of strings and writes the whole data structure
-        to the file. This file is internal to the class and hence assumes that any
-        argument provided to it must be sanitized and checked for earlier.
+        Takes a file path and a list of strings and writes the whole data
+        structure to the file. This file is internal to the class and hence
+        assumes that any argument provided to it must be sanitized and checked
+        for earlier.
 
-        This function does nothing more than just writing the data structure to the file.
+        This function does nothing more than just writing the data structure to
+        the file.
 
         Args:
             file_path(str): Path to store the data to
@@ -106,14 +113,15 @@ class OrigamiCache(object):
 
     def __read_from_file_as_python_list(self, file_path):
         """
-        Takes a file_path(A cache file) and parses it for a python list using ast
-        module.
+        Takes a file_path(A cache file) and parses it for a python list using
+        ast module.
 
         Args:
             file_path: Path of the file to parse.
 
         Raises:
-            MalformedCacheException: The cache file we are trying to parse is malformed.
+            MalformedCacheException: The cache file we are trying to parse is
+                malformed.
             InvalidCachePathException: The path provided to read does not exist.
         """
         if os.path.exists(file_path):
@@ -124,8 +132,8 @@ class OrigamiCache(object):
                     return eval_ds
                 except ValueError:
                     raise exceptions.MalformedCacheException(
-                        "Text cache does not contain a valid string to be evaluated"
-                    )
+                        "Text cache does not contain a valid string to be\
+                        evaluated")
         else:
             raise exceptions.InvalidCachePathException(
                 "No valid cache file found :: {}".format(file_path))
@@ -154,11 +162,11 @@ class OrigamiCache(object):
                 case it corresponds to the text array.
 
         Raises:
-            MalformedCacheException: Exception during parsing the data strcutre from
-                text cache file.
+            MalformedCacheException: Exception during parsing the data strcutre
+                from text cache file.
 
-            InvalidCachePathException: The path for cache we obtained is not present
-                or there is nothing to load fro the cache path.
+            InvalidCachePathException: The path for cache we obtained is not
+                present or there is nothing to load fro the cache path.
         """
         text_cache_path = os.path.join(self.cache_dir,
                                        constants.TEXT_CACHE_FILE)
@@ -168,29 +176,32 @@ class OrigamiCache(object):
 
     def __create_blobs_from_image_objects(self, image_objects_arr):
         """
-        Takes in an array of image_object like the one retrived from the request files
-        and saves it to disk in the cache directory as a blob. Each blob has a name which
-        corresponds to the MD5 hash of the image file. This ensures that no duplicate files
-        are stored twice and uses the same blobs for reference.
+        Takes in an array of image_object like the one retrived from the request
+        files and saves it to disk in the cache directory as a blob. Each blob
+        has a name which corresponds to the MD5 hash of the image file. This
+        ensures that no duplicate files are stored twice and uses the same blobs
+        for reference.
 
-        After saving the blobs to image blobs cache directory, it writes all the blobs hash
-        to a file image.cache which can then be used to lookup for the available blobs. This
-        file have a structure wherein it contains the blobs in the form of python list.
-        So to read this use the function __read_from_file_as_python_list(). It will return
+        After saving the blobs to image blobs cache directory, it writes all the
+        blobs hash to a file image.cache which can then be used to lookup for
+        the available blobs. This file have a structure wherein it contains the
+        blobs in the form of python list. So to read this use the function
+        __read_from_file_as_python_list(). It will return
         a python list of blobs hash.
 
         Args:
-            image_objects_arr: An array of image object(should be checked before here for type)
-                which will be cached by creating blobs from the file.
+            image_objects_arr: An array of image object(should be checked before
+                here for type) which will be cached by creating blobs from the
+                file.
 
         Returns:
-            image_blobs_hash: A python list containing the blobs hash which are saved into the
-                image cache directory.
+            image_blobs_hash: A python list containing the blobs hash which are
+                saved into the image cache directory.
 
         Raises:
-            BlobCreationException: Each image_object is converted to blob to be saved individually
-                this exception is thrown when there is an error during this process for any image
-                object.
+            BlobCreationException: Each image_object is converted to blob to be
+                saved individually this exception is thrown when there is an
+                error during this process for any image object.
         """
         image_blobs_hash = []
         image_cache_dir = os.path.join(self.cache_dir,
@@ -220,15 +231,16 @@ class OrigamiCache(object):
 
     def save_image_file_array_to_cache(self, image_objects):
         """
-        Save an array of image to the global origami cache. The provided image inputs
-        should be a list/tuple of images.
+        Save an array of image to the global origami cache. The provided image
+        inputs should be a list/tuple of images.
 
         Args:
             image_objects: list/tuple of images to be saved.
 
         Raises:
-            MismatchTypeException: Image objects in the argument should be a python list
-                or a tuple. THis is raised when this type is mismatched.
+            MismatchTypeException: Image objects in the argument should be a
+                python list or a tuple. THis is raised when this type is
+                mismatched.
         """
         if not isinstance(image_objects, (list, tuple)):
             raise exceptions.MismatchTypeException(
