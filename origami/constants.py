@@ -1,5 +1,5 @@
-ORIGAMI_SERVER_INJECTION_PATH = "/event"
-ORIGAMI_SERVER_BASE_URL = "localhost:8000"
+ORIGAMI_SERVER_INJECTION_PATH = "/inject"
+ORIGAMI_SERVER_BASE_URL = "localhost:5000"
 DEFAULT_PORT = 9001
 
 LOCAL_TARGET_REGEXP = '^localhost|127\.0\.0\..|0\.0\.0\.0'
@@ -39,3 +39,5 @@ MIME_TYPE_JPG = "image/jpg"
 MIME_TYPE_PNG = "image/png"
 
 TMP_DIR_BASE_PATH = "/tmp"
+
+GLOBAL_CACHE_PATH = "/tmp"

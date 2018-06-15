@@ -116,6 +116,26 @@ def check_if_string(data):
         return isinstance(data, str)
 
 
+def strict_check_array_of_string(data):
+    """
+    Checks if the argument provided is a list/tuple of string.
+
+    Args:
+        data: Data to be validated corresponding to array of string
+
+    Raises:
+        MismatchTypeException: Exception that the required type did not match
+            catch this to handle non array of strings.
+    """
+    if not isinstance(data, (list, tuple)):
+        raise exceptions.MismatchTypeException(
+            "send_text_array can only accept an array or a tuple")
+
+    if not all(check_if_string(element) for element in data):
+        raise exceptions.MismatchTypeException(
+            "send_text_array expects a list or tuple of string")
+
+
 def get_base64_image_from_file(file_path):
     """
     Takes image file_path as an argument and returns a base64 encoded string corresponding to
@@ -141,13 +161,13 @@ def get_base64_image_from_file(file_path):
                 src = constants.IMAGE_PNG_BASE64_SIG
             else:
                 raise exceptions.InavalidMimeTypeException(
-                    "Not a valid mime type for image : {}", content_type)
+                    "Not a valid mime type for image : {}".format(content_type))
             src += str(base64.b64encode(file.read()))
             return src
 
     except FileNotFoundError:
         raise exceptions.InvalidFilePathException(
-            "No file found matching the path {}", file_path)
+            "No file found matching the path {}".format(file_path))
 
 
 def get_base64_image_from_nparr(image_nparr):
@@ -173,4 +193,32 @@ def get_base64_image_from_nparr(image_nparr):
 
     except OSError:
         raise exceptions.FileHandlingException(
-            "Cannot write NP array to the path {} using cv2", path)
+            "Cannot write NP array to the path {} using cv2".format(path))
+
+
+def validate_cache_path(cache_path):
+    """
+    Validates cache path, checks if the path provided is a directory and has the
+    required permissions for reading and writing data.
+
+    Args:
+        cache_path: Path to be validated
+
+    Returns:
+        cache_path: Validated cache path as absolute path.
+
+    Raises:
+        InvalidCachePathException: The provided cache path is not valid, either
+            due to the permissions or is not a directory at all.
+    """
+    if os.path.isdir(cache_path):
+        cache_path = os.path.abspath(cache_path)
+        if os.access(cache_path, os.R_OK) and os.access(cache_path, os.W_OK):
+            return cache_path
+        else:
+            raise exceptions.InvalidCachePathException(
+                "Permission for cache_path({}) provided are not acceptable.".
+                format(cache_path))
+    else:
+        raise exceptions.InvalidCachePathException(
+            "Cache Path provided is not a Directory :: {}".format(cache_path))

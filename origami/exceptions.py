@@ -5,14 +5,23 @@ class OrigamiException(Exception):
     STATUS_CODE = 1
 
     def __init__(self, message=''):
-        super().__init__("[{0}] => {1}".format(self.STATUS_CODE, message))
+        super().__init__("OrigamiException[{0}] => {1}".format(
+            self.STATUS_CODE, message))
 
 
 class MismatchTypeException(OrigamiException):
     """
-    These exceptions are cause during mismatched types.
+    These exceptions are caused during mismatched types.
     """
     STATUS_CODE = 100
+
+
+class InvalidCachePathException(OrigamiException):
+    """
+    Global cache path is not valid, either due to permission or is not
+    a directory at all.
+    """
+    STATUS_CODE = 200
 
 
 class InputHandlerException(OrigamiException):

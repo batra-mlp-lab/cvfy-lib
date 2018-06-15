@@ -2,27 +2,21 @@ from flask import Flask, request as user_req, jsonify
 from flask_cors import CORS, cross_origin
 import requests
 import re
+import json
+import time
 from tornado.wsgi import WSGIContainer
-from tornado.httpserver import HTTPServer
+from tornado.web import Application, FallbackHandler
 from tornado.ioloop import IOLoop
+from tornado.websocket import WebSocketHandler
+import uuid
 
 from origami import constants, exceptions, utils
+from origami.pipeline import OrigamiCache
 
 
 class OrigamiRequester(object):
     def __init__(self):
         pass
-
-    def _get_target_from_token(self):
-        """
-        Returns:
-            The target URL for origami server to send payload to.
-        """
-        # TODO: Implement this for local deployment too using the token
-        target = "{0}{1}{2}".format(constants.HTTP_ENDPOINT,
-                                    constants.ORIGAMI_SERVER_PATH,
-                                    constants.ORIGAMI_INJECTION_PATH)
-        return target
 
     def request_origami_server(self, payload):
         """
@@ -91,20 +85,7 @@ class OrigamiRequester(object):
                 "Connection error when requesting origami server")
 
 
-class OrigamiPipeline(object):
-    """ Implements pipeline functions for Origami
-    Handles various pipeline functions such as fetching and saving data from
-    and to cache.
-    """
-
-    def __init__(self):
-        pass
-
-    def cache_image_file(self):
-        pass
-
-
-class OrigamiInputs(OrigamiPipeline):
+class OrigamiInputs():
     """ Origami input functions
     Class implementing input functions for Origami, this class will be
     inherited by main Origami class.
@@ -144,11 +125,21 @@ class OrigamiInputs(OrigamiPipeline):
     def get_image_array(self, mode=constants.INPUT_IMAGE_ARRAY_FILEPATH_MODE):
         """
         Extract image input from the request files.
+        The two modes defines how the user wants the images
+
+        file_path: The file_path mode which is the default one makes use of
+            OrigamiCache. It creates a cache object and then store the images
+            into the cache. and returns this object
+
+            User can then use this cache object to load images from the cache.
+            The load function will return a list of file_paths which will each
+            corresponding to the image.
 
         Args:
             mode: mode in which you are expecting the result
                 file_path -> cache Image locally and return path
-                numpy_array ->
+                numpy_array -> processes the image and returns the numpy array
+                    corresponding to that.
 
         Returns:
             ImageArr: array of Images either in the numpy array format or
@@ -171,7 +162,9 @@ class OrigamiInputs(OrigamiPipeline):
                     "No valid input image fields in the request")
 
         if mode == constants.INPUT_IMAGE_ARRAY_FILEPATH_MODE:
-            return self.cache_image_file(image_inputs)
+            cache = OrigamiCache()
+            cache.cache_image_file_array(image_inputs)
+            return cache
 
         elif mode == constants.INPUT_IMAGE_ARRAY_NPARRAY_MODE:
             return utils.get_image_as_numpy_arr(image_inputs)
@@ -241,7 +234,7 @@ class OrigamiOutputs(OrigamiRequester):
 
         return _wrapper
 
-    def _origmai_send_data(self, data, dataType):
+    def _origmai_send_data(self, data, dataType, socketId=None):
         """
         Core function which sends output to either the origami server or the
         user as response to request
@@ -256,7 +249,8 @@ class OrigamiOutputs(OrigamiRequester):
                 the origami server.
         """
         resp = None
-        socketId = user_req.form.get(constants.REQUEST_SOCKET_ID_KEY, type=str)
+        socketId = socketId if socketId else user_req.form.get(
+            constants.REQUEST_SOCKET_ID_KEY, type=str)
         # Check if a valid socketId is provided in the request
         # else consider it as an API request.
 
@@ -294,14 +288,7 @@ class OrigamiOutputs(OrigamiRequester):
 
         # TODO: make dataType more explicit here use different types for images
         # and graphs too so they can be handled properly via origami.
-
-        if not isinstance(data, (list, tuple)):
-            raise exceptions.MismatchTypeException(
-                "send_text_array can only accept an array or a tuple")
-
-        if not all(utils.check_if_string(element) for element in data):
-            raise exceptions.MismatchTypeException(
-                "send_text_array expects a list or tuple of string")
+        utils.strict_check_array_of_string(data)
 
         resp = self._origmai_send_data(data, dataType)
         return resp
@@ -391,11 +378,272 @@ class OrigamiOutputs(OrigamiRequester):
         return resp
 
 
-class Origami(OrigamiInputs, OrigamiOutputs):
+class _OrigamiWebSocketHandler(WebSocketHandler):
+    """
+    Handles persistent websocket connections for Origami
+
+    Attributes:
+        persistent_conn_map:
+            This is a list of object containing information about each
+            registered persistent connection. The structure of the object is:
+
+            {
+                "id": socketId,
+                "func": func,
+                "arguments": args,
+                "timestamp": time.time()
+            }
+
+            ID: SocketID for registering user
+            func: routine to execute when the request from websocket is made
+            arguments: a list of arguments to be provided to func.
+            timestamp: Timestamp when the function with is registered in the map
+                This will be used in the case when we deploy regular cleaning of
+                the connection maps.
+
+            Each time a user connection is registered an entry is made in this
+            mapping list. An entry from the map is deleted when the client closes
+            the websocket for the connection.
+    """
+    # A persistent connection mapping.
+    # Static variable, a single copy for all the connection.
+    # TODO: Run a worker to regularly clean this global mapping, might get too bloated
+    persistent_conn_map = []
+
+    def register_persistent_connection(self, func, args):
+        """
+        Entrypoint to register a persistent connection by user.
+        First check whether the func is callable and args should be a list
+        then add the func with args and socketID to the global map.
+
+        For each request that comes to demo, the `socket-id` of the client needs to be registered
+        this will done using this function, it register a function for a persistent connection with
+        the argument provided. Apart from the arguments in this function `func` will also require
+        to have an additional parameter ``message`` which will contain the input from the websocket
+        as a string.
+
+        For example
+
+        .. code-block:: python
+            def my_func(arg1, arg2, message=""):
+                print("Message from websocket is : ", message)
+                print("Arguments are :: ", arg1, arg2)
+
+            @app.listen()
+            @app.origami_api
+            def hello():
+                arr = ['Hello', 'World!']
+                text_arr = app.send_text_array()
+
+                # Register a function here
+                # You can think this of like a python decorator wherein you are essentially
+                # enclosing a function inside other. So hello() is the function which will
+                # setup the environment for my_func which will be executed withing the
+                # environment each time user makes a request using websockets.
+                # Args is the list of arguments you want to send for the function in the same
+                # order, they are what passed as the state of this connectino to the function.
+
+                app.register_persistent_connection(my_func, ["my argument", "secondArg"])
+
+        Now for the above example whenever a request a recieved a persistent connection
+        will be registered between client and demo. Once the user sends some data from
+        the websocket, the function registerd will be called with the corresponding
+        message.
+
+
+        Args:
+            func: function to execute for the message recieved from the websocket.
+            args: list of arguments.
+
+        Returns:
+            Bool: True if the persistent connection is registered.
+                False if the connection is not registered.
+        """
+        if not isinstance(args, list):
+            raise exceptions.MismatchTypeException(
+                "register_persistent_connection only accepts arguments as a list"
+            )
+        # Only works for python2 and python3.2+, check if the function is callable
+        if not callable(func):
+            raise exceptions.MismatchTypeException(
+                "Non callable argument for function")
+
+        socketId = user_req.form.get(constants.REQUEST_SOCKET_ID_KEY, type=str)
+
+        if socketId:
+            try:
+                # Try to check if a connection with the give socket-id already exist
+                dup_conn = next(
+                    x for x in self.persistent_conn_map if x["id"] == socketId)
+                self.__clear_connection(x)
+            except StopIteration:
+                # No connection with the socket ID found.
+                self.persistent_conn_map.append({
+                    "id": socketId,
+                    "func": func,
+                    "arguments": args,
+                    "timestamp": time.time()
+                })
+            return True
+        else:
+            # This is the case when the user is requesting without socket-id
+            self._clear_response()
+            payload = {"ERROR": "Not available over API"}
+            resp = self._send_api_response(payload)
+            return False
+
+    def check_origin(self, origin):
+        """
+        Overridden function from WebSocketHandler for CORS policy.
+        This ensures that websocket connection can be made from any
+        origin.
+        """
+        return True
+
+    def __clear_connection(self, conn=None):
+        """
+        Clear the active connection from the persistent connection map.
+        Remove the object self.active_connection from the list persistent_connections_map
+        """
+        conn = conn if conn else self.active_connection
+        if conn:
+            try:
+                dup_conn = next(x for x in self.persistent_conn_map
+                                if x["id"] == conn["id"])
+                self.persistent_conn_map.remove(x)
+            except StopIteration:
+                pass
+
+    def __reset_connection(self):
+        """
+        Reset global connection variables.
+        """
+        self.active_connection = None
+        self.connection_id = ""
+
+    def _validate_message(self, message):
+        """
+        Validate the provided message as argument for socket-id it came from.
+        Writes the message to the socket on the basis of message validation.
+
+        Args:
+            message: message from the websocket to be validated.
+                The format of a valid message is
+                {
+                    "socket-id": "[SocketID]" -> If first time connection opened
+                    "data": "[Data sent from client as a string]"
+                }
+
+        Returns:
+            data from the message or None
+        """
+        try:
+            message = json.loads(message)
+            if constants.REQUEST_SOCKET_ID_KEY in message:
+                socketId = message[constants.REQUEST_SOCKET_ID_KEY]
+                if not self.active_connection:
+                    self.active_connection = next(
+                        x for x in self.persistent_conn_map
+                        if x["id"] == socketId)
+                    self.connection_id = self.active_connection["id"]
+
+                elif self.active_connection and self.connection_id != socketId:
+                    self.write_error("Not a valid socket-id provided")
+                    self.close()
+                    return None
+
+            elif not self.active_connection:
+                self.write_message(
+                    "No active connection found, register socket-id")
+                self.close()
+                return None
+
+            if "data" in message and utils.check_if_string(message["data"]):
+                return message["data"]
+
+        except json.decoder.JSONDecodeError:
+            self.write_message("Could not decode JSON data sent.")
+        except StopIteration:
+            self.write_message("Could not find socket-id match")
+
+        self.close()
+        return None
+
+    def open(self):
+        """
+        A new websocket connection is opened
+        Overridden function from WebSocketHandler
+        """
+        self.__reset_connection()
+
+    def on_message(self, message):
+        """
+        Got a messege from the websocket connection.
+        Overridden method from WebSocketHandler
+
+        Args:
+            message: message from the websocket connection
+                This message is what we got from the websocket, first we need to
+                validate it and then extract the required matter from it which will
+                then be used by the registered function.
+        """
+        data = self._validate_message(message)
+        if data:
+            out_msg = self.active_connection["func"](
+                *self.active_connection["arguments"], message=data)
+            try:
+                # Send the out_msg returned from the function.
+                if isinstance(out_msg, dict):
+                    json_resp = json.dumps(out_msg)
+                    self.write_message(out_msg)
+                elif utils.check_if_string(out_msg):
+                    self.write_message(out_msg)
+                    # self._origmai_send_data(
+                    #     "ws_data", out_msg, socketId=self.connection_id)
+                else:
+                    print(
+                        "A persistent connection can only return a python dict or string"
+                    )
+            except:
+                pass
+
+    def on_close(self):
+        """
+        WebSocket connection is closed, clear the active connection that we were using
+        and reset the connection variables.
+        """
+        self.__clear_connection()
+        self.__reset_connection()
+
+
+class Origami(OrigamiInputs, OrigamiOutputs, _OrigamiWebSocketHandler):
     """ Origami class to declare the main app
 
     This class initializes the app and provides methods to interact with
     the web interface.
+
+    This is the main interface for interacting with Origami, it provides all
+    the necessery methods to be used by the user for demo deployment and user
+    interaction.
+
+    To create an Origami app
+
+    .. code-block:: python
+        from origami.origami import Origami
+
+        app = Origami("vqa")
+
+        @app.listen("/event")
+        @app.origami_api
+        def hello():
+            arr = ['Hello', 'World!']
+            text_arr = app.send_text_array()
+            return
+
+        # App configuration have been established, spin the demo
+        # This is a blocking call, so anything after this won't be executed.
+        app.run()
+
 
     Attributes:
         name: Application name.
@@ -405,7 +653,10 @@ class Origami(OrigamiInputs, OrigamiOutputs):
         cors: CORS for flask server running
     """
 
-    def __init__(self, name, server_base=constants.ORIGAMI_SERVER_BASE_URL):
+    def __init__(self,
+                 name,
+                 server_base=constants.ORIGAMI_SERVER_BASE_URL,
+                 cache_path=constants.GLOBAL_CACHE_PATH):
         """
         Inits class with provided arguments
         """
@@ -464,6 +715,16 @@ class Origami(OrigamiInputs, OrigamiOutputs):
     def run(self):
         """
         Starts the flask server over Tornados WSGI Container interface
+        Also provide websocket interface at /websocket for persistent connections
+
+        To run this server just create an instance of Origami Class and call this function
+
+        .. code-block:: python
+            from origami import Origami
+
+            app = Origami("My Model")
+            app.run()
+
 
         Raises:
             OrigamiServerException: Exception when the port we are trying to
@@ -471,15 +732,21 @@ class Origami(OrigamiInputs, OrigamiOutputs):
         """
         try:
             port = constants.DEFAULT_PORT
-            http_server = HTTPServer(WSGIContainer(self.server))
-            http_server.listen(port)
+            http_server = WSGIContainer(self.server)
+
+            # Register a web application with websocket at /websocket
+            server = Application([(r'/websocket', _OrigamiWebSocketHandler),
+                                  (r'.*', FallbackHandler,
+                                   dict(fallback=http_server))])
+
+            server.listen(port)
             print("Origami server running on port: {}".format(port))
             IOLoop.instance().start()
         except OSError:
             raise exceptions.OrigamiServerException(
                 "ORIGAMI SERVER ERROR: Port {0} already in use.".format(port))
 
-    def crossdomain(*args, **kwargs):
+    def crossdomain(self, *args, **kwargs):
         """
         Implements cross-domain access for origami wrapped function.
         This is useful when the demo is deployed on some external server
