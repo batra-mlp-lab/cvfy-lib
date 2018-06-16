@@ -176,7 +176,7 @@ class OrigamiCache(object):
 
     def __create_blobs_from_image_objects(self, image_objects_arr):
         """
-        Takes in an array of image_object like the one retrived from the request
+        Takes in an array of image_object like the one retrieved from the request
         files and saves it to disk in the cache directory as a blob. Each blob
         has a name which corresponds to the MD5 hash of the image file. This
         ensures that no duplicate files are stored twice and uses the same blobs
@@ -220,7 +220,7 @@ class OrigamiCache(object):
 
         except Exception as e:
             raise exceptions.BlobCreationException(
-                "Exception occured while creating blobs from image object array : {}".
+                "Exception occurred while creating blobs from image object array : {}".
                 format(e))
 
         image_cache_file = os.path.join(self.cache_dir,

@@ -22,7 +22,7 @@ def validate_token(token):
         token: Token if validated else an exception is raised
 
     Raises:
-        MismatchTypeException: Error occured when correct type of token is not
+        MismatchTypeException: Error occurred when correct type of token is not
              supplied.
         InvaidTokenException: Raised when token to be validated is invalid
     """
@@ -44,7 +44,7 @@ def validate_token(token):
 
 
 def parse_target(token):
-    """ Parses target of the application from the applicaiton token
+    """ Parses target of the application from the application token
 
     This function assumes that the token you are providing has been validated
     earlier using `validate_token` function, so it does not attempt to check

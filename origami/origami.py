@@ -84,7 +84,7 @@ class OrigamiRequester(object):
                 "Connection error when requesting origami server")
 
 
-class OrigamiInputs():
+class OrigamiInputs(object):
     """ Origami input functions
     Class implementing input functions for Origami, this class will be
     inherited by main Origami class.
@@ -436,9 +436,9 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
                 text_arr = app.send_text_array()
 
                 # Register a function here
-                # You can think this of like a python decorator wherein you areessentially
+                # You can think this of like a python decorator wherein you are essentially
                 # enclosing a function inside other. So hello() is the function which will
-                # setup the environment for my_func which will be executed withing the
+                # setup the environment for my_func which will be executed within the
                 # environment each time user makes a request using websockets.
                 # Args is the list of arguments you want to send for the function in the same
                 # order, they are what passed as the state of this connectino to the function.
@@ -446,9 +446,9 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
                 app.register_persistent_connection(my_func,
                     ["my argument", "secondArg"])
 
-        Now for the above example whenever a request a recieved a persistent
+        Now for the above example whenever a request a received a persistent
         connection will be registered between client and demo. Once the user
-        sends some data from the websocket, the function registerd will be
+        sends some data from the websocket, the function registered will be
         called with the corresponding message.
 
 
@@ -681,7 +681,7 @@ class Origami(OrigamiInputs, OrigamiOutputs, _OrigamiWebSocketHandler):
             target_url: Origami server target url
 
         Raises:
-            MismatchTypeException: Error occured when correct type of token is
+            MismatchTypeException: Error occurred when correct type of token is
                 not supplied.
         """
         try:
