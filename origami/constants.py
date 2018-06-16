@@ -41,3 +41,7 @@ MIME_TYPE_PNG = "image/png"
 TMP_DIR_BASE_PATH = "/tmp"
 
 GLOBAL_CACHE_PATH = "/tmp"
+
+TEXT_CACHE_FILE = "text.cache"
+IMAGE_CACHE_FILE = "image.cache"
+IMAGE_BLOBS_DIR = "img_blobs"

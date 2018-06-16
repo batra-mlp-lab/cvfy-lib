@@ -22,7 +22,7 @@ def validate_token(token):
         token: Token if validated else an exception is raised
 
     Raises:
-        MismatchTypeException: Error occured when correct type of token is not
+        MismatchTypeException: Error occurred when correct type of token is not
              supplied.
         InvaidTokenException: Raised when token to be validated is invalid
     """
@@ -44,7 +44,7 @@ def validate_token(token):
 
 
 def parse_target(token):
-    """ Parses target of the application from the applicaiton token
+    """ Parses target of the application from the application token
 
     This function assumes that the token you are providing has been validated
     earlier using `validate_token` function, so it does not attempt to check
@@ -138,8 +138,8 @@ def strict_check_array_of_string(data):
 
 def get_base64_image_from_file(file_path):
     """
-    Takes image file_path as an argument and returns a base64 encoded string corresponding to
-    the image.
+    Takes image file_path as an argument and returns a base64 encoded string
+    corresponding to the image.
 
     Args:
         file_path: Image path
@@ -148,14 +148,16 @@ def get_base64_image_from_file(file_path):
         src: base64 encoded image.
 
     Raises:
-        InvalidMimeTypeException: Image does not have a vaild mime type to process
+        InvalidMimeTypeException: Image does not have a vaild mime type to
+            process.
         InvalidFilePathException: File trying to access is not found.
     """
     try:
         with open(file_path, "rb") as file:
             mime = magic.Magic(mime=True)
             content_type = mime.from_file(file_path)
-            if content_type == constants.MIME_TYPE_JPEG or content_type == constants.MIME_TYPE_JPG:
+            if content_type == constants.MIME_TYPE_JPEG or \
+                content_type == constants.MIME_TYPE_JPG:
                 src = constants.IMAGE_JPEG_BASE64_SIG
             elif content_type == constants.MIME_TYPE_PNG:
                 src = constants.IMAGE_PNG_BASE64_SIG
