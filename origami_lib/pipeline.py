@@ -77,7 +77,7 @@ class OrigamiCache(object):
                 shutil.rmtree(self.cache_dir)
                 self.cache_dir = ""
             self.cache_id = ""
-        except Exception as e:
+        except Exception:
             pass
 
     def new_cache(self):

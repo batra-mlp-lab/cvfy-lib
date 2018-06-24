@@ -55,7 +55,7 @@ class OrigamiRequester(object):
         except Exception as e:
             raise exceptions.RequesterNoTargetUrlException(
                 "No target url retriver function _get_origami_server_target_url\
-                found")
+                found : {}".format(e))
 
         # Request the origami server
         try:
@@ -65,7 +65,8 @@ class OrigamiRequester(object):
                 data=payload)
         except Exception as e:
             raise exceptions.OrigamiRequesterException(
-                "Connection error when requesting origami server")
+                "Connection error when requesting origami server : {}".format(
+                    e))
 
         # Check the response object
         if resp.status_code == 400:
@@ -158,7 +159,7 @@ class OrigamiInputs(object):
         except Exception as e:
             if not image_inputs:
                 raise exceptions.InvalidRequestParameterGet(
-                    "No valid input image fields in the request")
+                    "No valid input image fields in the request : {}".format(e))
 
         if mode == constants.INPUT_IMAGE_ARRAY_FILEPATH_MODE:
             cache = OrigamiCache()
@@ -615,7 +616,7 @@ class _OrigamiWebSocketHandler(WebSocketHandler):
                     print(
                         "A persistent connection can only return a python dict \
                         or string")
-            except Exception as e:
+            except Exception:
                 pass
 
     def on_close(self):
