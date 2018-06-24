@@ -9,8 +9,8 @@ from tornado.web import Application, FallbackHandler
 from tornado.ioloop import IOLoop
 from tornado.websocket import WebSocketHandler
 
-from origami import constants, exceptions, utils
-from origami.pipeline import OrigamiCache
+from . import constants, exceptions, utils
+from .pipeline import OrigamiCache
 
 
 class OrigamiRequester(object):

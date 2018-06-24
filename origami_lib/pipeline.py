@@ -6,7 +6,7 @@ import os
 import shutil
 import uuid
 
-from origami import constants, exceptions, utils
+from . import constants, exceptions, utils
 
 
 class OrigamiCache(object):
@@ -41,9 +41,9 @@ class OrigamiCache(object):
         self.global_cache_path = utils.validate_cache_path(cache_path)
         self.cache_id = ""
         self.cache_dir = ""
-        self.__create_cache()
+        self._create_cache()
 
-    def __create_cache(self):
+    def _create_cache(self):
         """
         Create a cache space in global_cache_path and return the ID/directory to
         that.
@@ -55,7 +55,7 @@ class OrigamiCache(object):
             FileHandlingException: Exception during creating directory for the
                 cache.
         """
-        self.cache_id = uuid.uuid4()
+        self.cache_id = uuid.uuid4().hex
         self.cache_dir = os.path.join(self.global_cache_path, self.cache_id)
         try:
             if not os.path.exists(self.cache_dir):
