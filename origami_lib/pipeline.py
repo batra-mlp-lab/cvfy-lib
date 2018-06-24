@@ -89,7 +89,7 @@ class OrigamiCache(object):
             cache_id: Cache ID to reference the cache in future.
         """
         self.delete_current_cache()
-        cache_id = self.__create_cache()
+        cache_id = self._create_cache()
         return cache_id
 
     def __write_python_list_to_file(self, file_path, text_array):
@@ -176,11 +176,11 @@ class OrigamiCache(object):
 
     def __create_blobs_from_image_objects(self, image_objects_arr):
         """
-        Takes in an array of image_object like the one retrieved from the request
-        files and saves it to disk in the cache directory as a blob. Each blob
-        has a name which corresponds to the MD5 hash of the image file. This
-        ensures that no duplicate files are stored twice and uses the same blobs
-        for reference.
+        Takes in an array of image_object like the one retrieved from the
+        request files and saves it to disk in the cache directory as a blob.
+        Each blob has a name which corresponds to the MD5 hash of the image
+        file. This ensures that no duplicate files are stored twice and uses
+        the same blobs for reference.
 
         After saving the blobs to image blobs cache directory, it writes all the
         blobs hash to a file image.cache which can then be used to lookup for
@@ -220,8 +220,8 @@ class OrigamiCache(object):
 
         except Exception as e:
             raise exceptions.BlobCreationException(
-                "Exception occurred while creating blobs from image object array : {}".
-                format(e))
+                "Exception occurred while creating blobs from image object \
+                array : {}".format(e))
 
         image_cache_file = os.path.join(self.cache_dir,
                                         constants.IMAGE_CACHE_FILE)

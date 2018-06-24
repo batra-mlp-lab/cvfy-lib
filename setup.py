@@ -19,7 +19,7 @@ install_requires = [
 
 setup(
   name=PROJECT,
-  version='0.1.1',
+  version='0.1',
 
   description='Library to set up your project to run on Origami',
   long_description=README,
