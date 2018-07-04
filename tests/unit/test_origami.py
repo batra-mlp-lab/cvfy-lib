@@ -11,18 +11,18 @@ class _FunctionServiceHandlerTest(AsyncHTTPTestCase):
         return app
 
     def test_register_persistent_http_connection(self):
-        def temp_func(arg, query):
+        def temp_func(arg, query=""):
             return arg + '::' + query
 
         x = _FunctionServiceHandler
         self.assertRaises(MismatchTypeException,
-                          x.register_persistent_http_connection, x, temp_func,
+                          x.register_persistent_http_connection, temp_func,
                           "pass a list")
         self.assertRaises(MismatchTypeException,
-                          x.register_persistent_http_connection, x,
+                          x.register_persistent_http_connection,
                           "pass a callable here", ["a"])
 
-        f_id = x.register_persistent_http_connection(x, temp_func, ["argument"])
+        f_id = x.register_persistent_http_connection(temp_func, ["argument"])
         entry = x.functional_service_map[-1]
         self.assertEqual(f_id, entry["id"])
         self.assertEqual(["argument"], entry["arguments"])

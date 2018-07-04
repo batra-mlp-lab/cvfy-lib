@@ -644,7 +644,8 @@ class _FunctionServiceHandler(RequestHandler):
     MAX_CONN_LIMIT = 32
     functional_service_map = deque(maxlen=MAX_CONN_LIMIT)
 
-    def register_persistent_http_connection(self, func, args):
+    @classmethod
+    def register_persistent_http_connection(cls, func, args):
         """
         Similar to register_persistent_connection method for a websocket
         handler, with the only difference that it registers http connection
@@ -723,7 +724,7 @@ class _FunctionServiceHandler(RequestHandler):
                 "Non callable argument for function")
 
         func_id = uuid.uuid4().hex
-        self.functional_service_map.append({
+        cls.functional_service_map.append({
             "id": func_id,
             "func": func,
             "arguments": args,
@@ -738,7 +739,8 @@ class _FunctionServiceHandler(RequestHandler):
             try:
                 connection = next(x for x in self.functional_service_map
                                   if x["id"] == func_id)
-                out_msg = connection["func"](*connection["arguments"], query)
+                out_msg = connection["func"](
+                    *connection["arguments"], query=query)
                 try:
                     # Send the out_msg returned from the function.
                     if isinstance(out_msg, dict):
