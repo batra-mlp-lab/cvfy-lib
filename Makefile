@@ -12,7 +12,7 @@ create-venv:
 setup-dev: clean create-venv
 	@echo ">>> Setting up dev environment"
 	@. ./venv/bin/activate && \
-		pip install -r requirements-dev.txt && \
+		pip install -r dev-requirements.txt && \
 		pip install --editable .
 
 test-lint:
